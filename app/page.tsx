@@ -1,103 +1,197 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import Link from "next/link";
+import { Eye, Sparkles, Users, Calendar, Package, TrendingUp, BarChart3, ShoppingCart } from "lucide-react";
+import { motion } from "framer-motion";
+import { useEffect, useState } from "react";
+import { supabase } from "@/lib/supabase";
+
+export default function HomePage() {
+  const [stats, setStats] = useState([
+    { label: "Productos en Stock", value: "...", icon: Package, color: "blue" },
+    { label: "Citas del Mes", value: "...", icon: Calendar, color: "indigo" },
+    { label: "Clientes Activos", value: "...", icon: Users, color: "purple" },
+    { label: "Ventas del Mes", value: "...", icon: TrendingUp, color: "green" },
+  ]);
+
+  useEffect(() => {
+    cargarEstadisticas();
+  }, []);
+
+  const cargarEstadisticas = async () => {
+    try {
+      // Obtener total de productos activos
+      const { count: totalProductos } = await supabase
+        .from('productos')
+        .select('*', { count: 'exact', head: true })
+        .eq('activo', true);
+
+      // Obtener citas del mes actual
+      const now = new Date();
+      const primerDiaMes = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+      const ultimoDiaMes = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0];
+
+      const { count: citasMes } = await supabase
+        .from('citas')
+        .select('*', { count: 'exact', head: true })
+        .gte('fecha', primerDiaMes)
+        .lte('fecha', ultimoDiaMes);
+
+      // Obtener total de clientes
+      const { count: totalClientes } = await supabase
+        .from('clientes')
+        .select('*', { count: 'exact', head: true });
+
+      // Obtener ventas del mes
+      const { data: ventasMes } = await supabase
+        .from('ventas')
+        .select('total')
+        .gte('fecha', primerDiaMes)
+        .lte('fecha', ultimoDiaMes)
+        .eq('estado', 'completada');
+
+      const totalVentasMes = ventasMes?.reduce((acc, v) => acc + Number(v.total), 0) || 0;
+
+      setStats([
+        { label: "Productos en Stock", value: totalProductos?.toString() || "0", icon: Package, color: "blue" },
+        { label: "Citas del Mes", value: citasMes?.toString() || "0", icon: Calendar, color: "indigo" },
+        { label: "Clientes Activos", value: totalClientes?.toString() || "0", icon: Users, color: "purple" },
+        { label: "Ventas del Mes", value: `$${totalVentasMes.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, icon: TrendingUp, color: "green" },
+      ]);
+    } catch (error) {
+      console.error('Error al cargar estadísticas:', error);
+    }
+  };
+
   return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
-
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+    <div className="space-y-8">
+      {/* Header de bienvenida */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6 }}
+      >
+        <div className="flex items-center gap-3 mb-2">
+          <div className="relative">
+            <div className="absolute inset-0 bg-blue-500 rounded-full blur-sm opacity-50"></div>
+            <Eye className="h-10 w-10 text-blue-600 relative z-10" />
+          </div>
+          <div>
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+              Bienvenido a OptiGestión
+            </h1>
+            <p className="text-gray-500 mt-1">Panel de control principal</p>
+          </div>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+      </motion.div>
+
+      {/* Estadísticas principales */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.2, duration: 0.6 }}
+        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"
+      >
+        {stats.map((stat, index) => {
+          const Icon = stat.icon;
+          return (
+            <div
+              key={index}
+              className="bg-white rounded-xl shadow-md p-6 hover:shadow-lg transition-shadow"
+            >
+              <div className="flex items-center justify-between mb-4">
+                <div className={`p-3 rounded-lg bg-${stat.color}-100`}>
+                  <Icon className={`h-6 w-6 text-${stat.color}-600`} />
+                </div>
+              </div>
+              <p className="text-sm text-gray-500 mb-1">{stat.label}</p>
+              <p className="text-3xl font-bold text-gray-800">{stat.value}</p>
+            </div>
+          );
+        })}
+      </motion.div>
+
+      {/* Accesos rápidos */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.4, duration: 0.6 }}
+      >
+        <h2 className="text-2xl font-bold text-gray-800 mb-4">Accesos Rápidos</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          <Link href="/inventario">
+            <div className="bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-xl p-6 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 cursor-pointer">
+              <Package className="h-8 w-8 mb-3" />
+              <h3 className="text-xl font-bold mb-2">Inventario</h3>
+              <p className="text-blue-100 text-sm">Gestiona el stock de productos</p>
+            </div>
+          </Link>
+
+          <Link href="/citas">
+            <div className="bg-gradient-to-br from-indigo-500 to-indigo-600 text-white rounded-xl p-6 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 cursor-pointer">
+              <Calendar className="h-8 w-8 mb-3" />
+              <h3 className="text-xl font-bold mb-2">Citas</h3>
+              <p className="text-indigo-100 text-sm">Agenda y gestiona citas</p>
+            </div>
+          </Link>
+
+          <Link href="/clientes">
+            <div className="bg-gradient-to-br from-purple-500 to-purple-600 text-white rounded-xl p-6 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 cursor-pointer">
+              <Users className="h-8 w-8 mb-3" />
+              <h3 className="text-xl font-bold mb-2">Clientes</h3>
+              <p className="text-purple-100 text-sm">Administra tu base de clientes</p>
+            </div>
+          </Link>
+
+          <Link href="/productos">
+            <div className="bg-gradient-to-br from-green-500 to-green-600 text-white rounded-xl p-6 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 cursor-pointer">
+              <ShoppingCart className="h-8 w-8 mb-3" />
+              <h3 className="text-xl font-bold mb-2">Productos</h3>
+              <p className="text-green-100 text-sm">Catálogo de productos</p>
+            </div>
+          </Link>
+
+          <Link href="/inventario/estadisticas">
+            <div className="bg-gradient-to-br from-orange-500 to-orange-600 text-white rounded-xl p-6 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 cursor-pointer">
+              <BarChart3 className="h-8 w-8 mb-3" />
+              <h3 className="text-xl font-bold mb-2">Estadísticas</h3>
+              <p className="text-orange-100 text-sm">Análisis y reportes</p>
+            </div>
+          </Link>
+
+          <Link href="/clientes/nuevo">
+            <div className="bg-gradient-to-br from-pink-500 to-pink-600 text-white rounded-xl p-6 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 cursor-pointer">
+              <Users className="h-8 w-8 mb-3" />
+              <h3 className="text-xl font-bold mb-2">Nuevo Cliente</h3>
+              <p className="text-pink-100 text-sm">Registrar nuevo cliente</p>
+            </div>
+          </Link>
+        </div>
+      </motion.div>
+
+      {/* Información del sistema */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.6, duration: 0.6 }}
+        className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-6"
+      >
+        <div className="flex items-start gap-4">
+          <div className="p-3 bg-blue-100 rounded-lg">
+            <Sparkles className="h-6 w-6 text-blue-600" />
+          </div>
+          <div>
+            <h3 className="text-lg font-bold text-gray-800 mb-2">
+              Sistema de Gestión para Ópticas
+            </h3>
+            <p className="text-gray-600 text-sm leading-relaxed">
+              OptiGestión te permite administrar tu óptica de manera eficiente.
+              Controla tu inventario, agenda citas, gestiona clientes y genera reportes
+              desde una sola plataforma intuitiva y profesional.
+            </p>
+          </div>
+        </div>
+      </motion.div>
     </div>
   );
 }
