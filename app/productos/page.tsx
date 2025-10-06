@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Search, Filter, Eye, ShoppingCart, DollarSign, Package } from "lucide-react";
+import { Search, Filter, Eye, ShoppingCart, DollarSign, Package, Plus } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { Producto, CategoriaProducto, ProductoConCategoria } from "@/lib/types";
 import { toast } from "sonner";
@@ -14,6 +14,12 @@ export default function ProductosPage() {
   const [loading, setLoading] = useState(true);
   const [valorInventario, setValorInventario] = useState(0);
   const [modalAgregar, setModalAgregar] = useState(false);
+  const [modalVer, setModalVer] = useState(false);
+  const [modalVender, setModalVender] = useState(false);
+  const [modalAgregarStock, setModalAgregarStock] = useState(false);
+  const [productoSeleccionado, setProductoSeleccionado] = useState<ProductoConCategoria | null>(null);
+  const [cantidadVenta, setCantidadVenta] = useState(1);
+  const [cantidadAgregar, setCantidadAgregar] = useState(1);
   const [formData, setFormData] = useState({
     nombre: '',
     marca: '',
@@ -110,6 +116,102 @@ export default function ProductosPage() {
     } catch (error: any) {
       console.error('Error al agregar producto:', error);
       toast.error(error.message || 'Error al agregar producto');
+    }
+  };
+
+  const abrirModalVer = (producto: ProductoConCategoria) => {
+    setProductoSeleccionado(producto);
+    setModalVer(true);
+  };
+
+  const abrirModalVender = (producto: ProductoConCategoria) => {
+    setProductoSeleccionado(producto);
+    setCantidadVenta(1);
+    setModalVender(true);
+  };
+
+  const abrirModalAgregarStock = (producto: ProductoConCategoria) => {
+    setProductoSeleccionado(producto);
+    setCantidadAgregar(1);
+    setModalAgregarStock(true);
+  };
+
+  const agregarStock = async () => {
+    if (!productoSeleccionado) return;
+
+    try {
+      if (cantidadAgregar <= 0) {
+        toast.error('La cantidad debe ser mayor a 0');
+        return;
+      }
+
+      // Registrar movimiento de entrada - el trigger actualizará el stock automáticamente
+      const { error: errorMovimiento } = await supabase
+        .from('movimientos_inventario')
+        .insert({
+          producto_id: productoSeleccionado.id,
+          tipo: 'entrada',
+          cantidad: cantidadAgregar,
+          motivo: 'Reabastecimiento de stock',
+          fecha: new Date().toISOString(),
+          usuario: 'Sistema'
+        });
+
+      if (errorMovimiento) throw errorMovimiento;
+
+      toast.success(`Stock agregado: +${cantidadAgregar} unidad(es) de ${productoSeleccionado.nombre}`);
+      setModalAgregarStock(false);
+      setProductoSeleccionado(null);
+
+      // Recargar datos con delay
+      setTimeout(() => {
+        cargarDatos();
+      }, 300);
+    } catch (error: any) {
+      console.error('Error al agregar stock:', error);
+      toast.error(error.message || 'Error al agregar stock');
+    }
+  };
+
+  const realizarVenta = async () => {
+    if (!productoSeleccionado) return;
+
+    try {
+      if (cantidadVenta <= 0) {
+        toast.error('La cantidad debe ser mayor a 0');
+        return;
+      }
+
+      if (cantidadVenta > productoSeleccionado.stock) {
+        toast.error('No hay suficiente stock disponible');
+        return;
+      }
+
+      // Registrar movimiento de salida - el trigger de Supabase actualizará el stock automáticamente
+      const { error: errorMovimiento } = await supabase
+        .from('movimientos_inventario')
+        .insert({
+          producto_id: productoSeleccionado.id,
+          tipo: 'salida',
+          cantidad: cantidadVenta,
+          motivo: 'Venta',
+          fecha: new Date().toISOString(),
+          usuario: 'Sistema'
+        });
+
+      if (errorMovimiento) throw errorMovimiento;
+
+      toast.success(`Venta registrada: ${cantidadVenta} unidad(es) de ${productoSeleccionado.nombre}`);
+      setModalVender(false);
+      setProductoSeleccionado(null);
+
+      // Recargar datos con delay para asegurar que el trigger se ejecutó
+      setTimeout(() => {
+        cargarDatos();
+      }, 300);
+    } catch (error: any) {
+      console.error('Error al realizar venta:', error);
+      toast.error(error.message || 'Error al realizar la venta');
     }
   };
 
@@ -246,14 +348,29 @@ export default function ProductosPage() {
                     </div>
 
                     {/* Acciones */}
-                    <div className="flex gap-2">
-                      <button className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg transition flex items-center justify-center gap-2">
-                        <Eye className="h-4 w-4" />
-                        Ver
-                      </button>
-                      <button className="flex-1 border border-blue-600 text-blue-600 hover:bg-blue-50 py-2 px-4 rounded-lg transition flex items-center justify-center gap-2">
-                        <ShoppingCart className="h-4 w-4" />
-                        Vender
+                    <div className="flex flex-col gap-2">
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => abrirModalVer(producto)}
+                          className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg transition flex items-center justify-center gap-2"
+                        >
+                          <Eye className="h-4 w-4" />
+                          Ver
+                        </button>
+                        <button
+                          onClick={() => abrirModalVender(producto)}
+                          className="flex-1 border border-blue-600 text-blue-600 hover:bg-blue-50 py-2 px-4 rounded-lg transition flex items-center justify-center gap-2"
+                        >
+                          <ShoppingCart className="h-4 w-4" />
+                          Vender
+                        </button>
+                      </div>
+                      <button
+                        onClick={() => abrirModalAgregarStock(producto)}
+                        className="w-full bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg transition flex items-center justify-center gap-2"
+                      >
+                        <Plus className="h-4 w-4" />
+                        Agregar Stock
                       </button>
                     </div>
                   </div>
@@ -401,6 +518,201 @@ export default function ProductosPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Ver Producto */}
+      {modalVer && productoSeleccionado && (
+        <div className="fixed inset-0 bg-gray-900 bg-opacity-75 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full">
+            <div className="bg-blue-600 text-white p-6">
+              <h2 className="text-2xl font-bold">Detalles del Producto</h2>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm text-gray-500">Nombre</p>
+                  <p className="text-lg font-semibold text-gray-800">{productoSeleccionado.nombre}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Marca</p>
+                  <p className="text-lg font-semibold text-gray-800">{productoSeleccionado.marca || 'Sin marca'}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Categoría</p>
+                  <p className="text-lg font-semibold text-gray-800">{productoSeleccionado.categoria?.nombre || 'Sin categoría'}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Precio</p>
+                  <p className="text-lg font-semibold text-green-600">${productoSeleccionado.precio.toLocaleString('es-ES', { minimumFractionDigits: 2 })}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Stock Actual</p>
+                  <p className={`text-lg font-semibold ${productoSeleccionado.stock <= productoSeleccionado.stock_minimo ? 'text-red-600' : 'text-green-600'}`}>
+                    {productoSeleccionado.stock} unidades
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Stock Mínimo</p>
+                  <p className="text-lg font-semibold text-gray-800">{productoSeleccionado.stock_minimo} unidades</p>
+                </div>
+                {productoSeleccionado.codigo_barras && (
+                  <div className="col-span-2">
+                    <p className="text-sm text-gray-500">Código de Barras</p>
+                    <p className="text-lg font-semibold text-gray-800">{productoSeleccionado.codigo_barras}</p>
+                  </div>
+                )}
+                {productoSeleccionado.descripcion && (
+                  <div className="col-span-2">
+                    <p className="text-sm text-gray-500">Descripción</p>
+                    <p className="text-gray-700">{productoSeleccionado.descripcion}</p>
+                  </div>
+                )}
+              </div>
+
+              <div className="pt-4 border-t">
+                <p className="text-sm text-gray-500">Valor en Inventario</p>
+                <p className="text-2xl font-bold text-blue-600">
+                  ${(productoSeleccionado.precio * productoSeleccionado.stock).toLocaleString('es-ES', { minimumFractionDigits: 2 })}
+                </p>
+              </div>
+            </div>
+
+            <div className="bg-gray-50 p-6 flex justify-end">
+              <button
+                onClick={() => setModalVer(false)}
+                className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition"
+              >
+                Cerrar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Vender Producto */}
+      {modalVender && productoSeleccionado && (
+        <div className="fixed inset-0 bg-gray-900 bg-opacity-75 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full">
+            <div className="bg-blue-600 text-white p-6">
+              <h2 className="text-2xl font-bold">Registrar Venta</h2>
+              <p className="text-blue-100 text-sm mt-1">{productoSeleccionado.nombre}</p>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <div className="flex justify-between mb-2">
+                  <span className="text-gray-600">Precio unitario:</span>
+                  <span className="font-semibold">${productoSeleccionado.precio.toLocaleString('es-ES', { minimumFractionDigits: 2 })}</span>
+                </div>
+                <div className="flex justify-between mb-2">
+                  <span className="text-gray-600">Stock disponible:</span>
+                  <span className="font-semibold">{productoSeleccionado.stock} unidades</span>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Cantidad a vender *
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  max={productoSeleccionado.stock}
+                  value={cantidadVenta}
+                  onChange={(e) => setCantidadVenta(parseInt(e.target.value) || 1)}
+                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                />
+              </div>
+
+              <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                <div className="flex justify-between items-center">
+                  <span className="text-lg font-semibold text-gray-700">Total:</span>
+                  <span className="text-2xl font-bold text-blue-600">
+                    ${(productoSeleccionado.precio * cantidadVenta).toLocaleString('es-ES', { minimumFractionDigits: 2 })}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-gray-50 p-6 flex justify-end gap-3">
+              <button
+                onClick={() => setModalVender(false)}
+                className="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-100 font-semibold transition"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={realizarVenta}
+                className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition"
+              >
+                Confirmar Venta
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Agregar Stock */}
+      {modalAgregarStock && productoSeleccionado && (
+        <div className="fixed inset-0 bg-gray-900 bg-opacity-75 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full">
+            <div className="bg-green-600 text-white p-6">
+              <h2 className="text-2xl font-bold">Agregar Stock</h2>
+              <p className="text-green-100 text-sm mt-1">{productoSeleccionado.nombre}</p>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <div className="flex justify-between mb-2">
+                  <span className="text-gray-600">Stock actual:</span>
+                  <span className="font-semibold">{productoSeleccionado.stock} unidades</span>
+                </div>
+                <div className="flex justify-between mb-2">
+                  <span className="text-gray-600">Stock mínimo:</span>
+                  <span className="font-semibold">{productoSeleccionado.stock_minimo} unidades</span>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Cantidad a agregar *
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  value={cantidadAgregar}
+                  onChange={(e) => setCantidadAgregar(parseInt(e.target.value) || 1)}
+                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:outline-none"
+                />
+              </div>
+
+              <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+                <div className="flex justify-between items-center">
+                  <span className="text-lg font-semibold text-gray-700">Nuevo stock:</span>
+                  <span className="text-2xl font-bold text-green-600">
+                    {productoSeleccionado.stock + cantidadAgregar} unidades
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-gray-50 p-6 flex justify-end gap-3">
+              <button
+                onClick={() => setModalAgregarStock(false)}
+                className="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-100 font-semibold transition"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={agregarStock}
+                className="px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold transition"
+              >
+                Confirmar
+              </button>
+            </div>
           </div>
         </div>
       )}

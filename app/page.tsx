@@ -42,15 +42,20 @@ export default function HomePage() {
         .from('clientes')
         .select('*', { count: 'exact', head: true });
 
-      // Obtener ventas del mes
-      const { data: ventasMes } = await supabase
-        .from('ventas')
-        .select('total')
-        .gte('fecha', primerDiaMes)
-        .lte('fecha', ultimoDiaMes)
-        .eq('estado', 'completada');
+      // Obtener ventas del mes (basado en salidas de inventario)
+      const { data: salidasMes } = await supabase
+        .from('movimientos_inventario')
+        .select(`
+          cantidad,
+          producto:productos(precio)
+        `)
+        .eq('tipo', 'salida')
+        .gte('fecha', new Date(now.getFullYear(), now.getMonth(), 1).toISOString());
 
-      const totalVentasMes = ventasMes?.reduce((acc, v) => acc + Number(v.total), 0) || 0;
+      const totalVentasMes = salidasMes?.reduce((acc, salida) => {
+        const precio = salida.producto?.precio || 0;
+        return acc + (salida.cantidad * precio);
+      }, 0) || 0;
 
       setStats([
         { label: "Productos en Stock", value: totalProductos?.toString() || "0", icon: Package, color: "blue" },

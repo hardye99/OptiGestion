@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, TrendingUp, TrendingDown, Package, Calendar, Filter, Search } from "lucide-react";
+import { Plus, TrendingUp, TrendingDown, Package, Calendar, Filter, Search, X } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { MovimientoConProducto } from "@/lib/types";
 
@@ -15,10 +15,19 @@ export default function HistorialMovimientosPage() {
     salidasHoy: 0,
     balance: 0
   });
+  const [mostrarModalNuevo, setMostrarModalNuevo] = useState(false);
+  const [productos, setProductos] = useState<any[]>([]);
+  const [nuevoMovimiento, setNuevoMovimiento] = useState({
+    producto_id: "",
+    tipo: "entrada",
+    cantidad: 0,
+    motivo: ""
+  });
 
   useEffect(() => {
     cargarMovimientos();
     cargarEstadisticas();
+    cargarProductos();
   }, []);
 
   const cargarMovimientos = async () => {
@@ -42,14 +51,16 @@ export default function HistorialMovimientosPage() {
 
   const cargarEstadisticas = async () => {
     try {
-      const hoy = new Date().toISOString().split('T')[0];
+      const hoy = new Date();
+      hoy.setHours(0, 0, 0, 0);
+      const inicioHoy = hoy.toISOString();
 
       // Entradas de hoy
       const { data: entradas } = await supabase
         .from('movimientos_inventario')
         .select('cantidad')
         .eq('tipo', 'entrada')
-        .gte('fecha', hoy);
+        .gte('fecha', inicioHoy);
 
       const totalEntradas = entradas?.reduce((acc, m) => acc + m.cantidad, 0) || 0;
 
@@ -58,9 +69,9 @@ export default function HistorialMovimientosPage() {
         .from('movimientos_inventario')
         .select('cantidad')
         .eq('tipo', 'salida')
-        .gte('fecha', hoy);
+        .gte('fecha', inicioHoy);
 
-      const totalSalidas = salidas?.reduce((acc, m) => acc + Math.abs(m.cantidad), 0) || 0;
+      const totalSalidas = salidas?.reduce((acc, m) => acc + m.cantidad, 0) || 0;
 
       setEstadisticas({
         entradasHoy: totalEntradas,
@@ -69,6 +80,79 @@ export default function HistorialMovimientosPage() {
       });
     } catch (error) {
       console.error('Error al cargar estadísticas:', error);
+    }
+  };
+
+  const cargarProductos = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('productos')
+        .select('id, nombre, stock')
+        .eq('activo', true)
+        .order('nombre');
+
+      if (error) throw error;
+      setProductos(data || []);
+    } catch (error) {
+      console.error('Error al cargar productos:', error);
+    }
+  };
+
+  const abrirModalNuevo = () => {
+    setNuevoMovimiento({
+      producto_id: "",
+      tipo: "entrada",
+      cantidad: 0,
+      motivo: ""
+    });
+    setMostrarModalNuevo(true);
+  };
+
+  const registrarMovimiento = async () => {
+    try {
+      if (!nuevoMovimiento.producto_id || nuevoMovimiento.cantidad <= 0) {
+        alert('Por favor completa todos los campos requeridos');
+        return;
+      }
+
+      const productoSeleccionado = productos.find(p => p.id === nuevoMovimiento.producto_id);
+      if (!productoSeleccionado) {
+        alert('Producto no encontrado');
+        return;
+      }
+
+      // Validar stock disponible para salidas
+      if (nuevoMovimiento.tipo === 'salida' && nuevoMovimiento.cantidad > productoSeleccionado.stock) {
+        alert('No hay suficiente stock para realizar esta salida');
+        return;
+      }
+
+      // Insertar movimiento - el trigger de Supabase actualizará el stock automáticamente
+      const { error: errorMovimiento } = await supabase
+        .from('movimientos_inventario')
+        .insert({
+          producto_id: nuevoMovimiento.producto_id,
+          tipo: nuevoMovimiento.tipo,
+          cantidad: nuevoMovimiento.cantidad,
+          motivo: nuevoMovimiento.motivo || null,
+          fecha: new Date().toISOString(),
+          usuario: 'Sistema'
+        });
+
+      if (errorMovimiento) throw errorMovimiento;
+
+      alert('Movimiento registrado exitosamente');
+      setMostrarModalNuevo(false);
+
+      // Recargar datos con un pequeño delay para asegurar que el trigger se ejecutó
+      setTimeout(() => {
+        cargarMovimientos();
+        cargarEstadisticas();
+        cargarProductos();
+      }, 300);
+    } catch (error) {
+      console.error('Error al registrar movimiento:', error);
+      alert('Error al registrar el movimiento');
     }
   };
 
@@ -86,7 +170,10 @@ export default function HistorialMovimientosPage() {
           <h1 className="text-3xl font-bold text-gray-800">Historial de Movimientos</h1>
           <p className="text-gray-500">Registro completo de entradas, salidas y ajustes</p>
         </div>
-        <button className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl shadow-md font-semibold transition transform hover:-translate-y-1 flex items-center gap-2">
+        <button
+          onClick={abrirModalNuevo}
+          className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl shadow-md font-semibold transition transform hover:-translate-y-1 flex items-center gap-2"
+        >
           <Plus className="h-5 w-5" />
           Nuevo Movimiento
         </button>
@@ -261,6 +348,126 @@ export default function HistorialMovimientosPage() {
           </div>
         </div>
       </div>
+
+      {/* Modal para nuevo movimiento */}
+      {mostrarModalNuevo && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full">
+            <div className="bg-blue-600 text-white p-6 flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl font-bold">Nuevo Movimiento</h2>
+                <p className="text-blue-100 text-sm mt-1">Registrar entrada o salida de inventario</p>
+              </div>
+              <button
+                onClick={() => setMostrarModalNuevo(false)}
+                className="p-2 hover:bg-blue-700 rounded-lg transition"
+              >
+                <X className="h-6 w-6" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Producto *
+                </label>
+                <select
+                  value={nuevoMovimiento.producto_id}
+                  onChange={(e) => setNuevoMovimiento({ ...nuevoMovimiento, producto_id: e.target.value })}
+                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                >
+                  <option value="">Selecciona un producto</option>
+                  {productos.map((producto) => (
+                    <option key={producto.id} value={producto.id}>
+                      {producto.nombre} (Stock: {producto.stock})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Tipo de movimiento *
+                </label>
+                <div className="grid grid-cols-3 gap-2">
+                  <button
+                    onClick={() => setNuevoMovimiento({ ...nuevoMovimiento, tipo: 'entrada' })}
+                    className={`px-4 py-2 rounded-lg font-semibold transition ${
+                      nuevoMovimiento.tipo === 'entrada'
+                        ? 'bg-green-600 text-white'
+                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    }`}
+                  >
+                    Entrada
+                  </button>
+                  <button
+                    onClick={() => setNuevoMovimiento({ ...nuevoMovimiento, tipo: 'salida' })}
+                    className={`px-4 py-2 rounded-lg font-semibold transition ${
+                      nuevoMovimiento.tipo === 'salida'
+                        ? 'bg-red-600 text-white'
+                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    }`}
+                  >
+                    Salida
+                  </button>
+                  <button
+                    onClick={() => setNuevoMovimiento({ ...nuevoMovimiento, tipo: 'ajuste' })}
+                    className={`px-4 py-2 rounded-lg font-semibold transition ${
+                      nuevoMovimiento.tipo === 'ajuste'
+                        ? 'bg-yellow-600 text-white'
+                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    }`}
+                  >
+                    Ajuste
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Cantidad *
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  value={nuevoMovimiento.cantidad}
+                  onChange={(e) => setNuevoMovimiento({ ...nuevoMovimiento, cantidad: parseInt(e.target.value) || 0 })}
+                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                  placeholder="Ingresa la cantidad"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Motivo (opcional)
+                </label>
+                <textarea
+                  value={nuevoMovimiento.motivo}
+                  onChange={(e) => setNuevoMovimiento({ ...nuevoMovimiento, motivo: e.target.value })}
+                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                  rows={3}
+                  placeholder="Descripción del movimiento..."
+                />
+              </div>
+            </div>
+
+            <div className="bg-gray-50 p-6 flex justify-end gap-3">
+              <button
+                onClick={() => setMostrarModalNuevo(false)}
+                className="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-100 font-semibold transition"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={registrarMovimiento}
+                className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition"
+              >
+                Registrar Movimiento
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

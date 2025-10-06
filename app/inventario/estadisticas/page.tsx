@@ -34,16 +34,23 @@ export default function EstadisticasInventarioPage() {
       const stockTotal = statsInventario?.reduce((acc, cat) => acc + (cat.stock_total || 0), 0) || 0;
       const valorTotal = statsInventario?.reduce((acc, cat) => acc + (cat.valor_total || 0), 0) || 0;
 
-      // Obtener ventas del mes
+      // Obtener salidas del mes (ventas)
       const now = new Date();
-      const primerDiaMes = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
-      const { data: ventasMes } = await supabase
-        .from('ventas')
-        .select('total')
-        .gte('fecha', primerDiaMes)
-        .eq('estado', 'completada');
+      const primerDiaMes = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
 
-      const totalVentasMes = ventasMes?.reduce((acc, v) => acc + Number(v.total), 0) || 0;
+      const { data: salidasMes } = await supabase
+        .from('movimientos_inventario')
+        .select(`
+          cantidad,
+          producto:productos(precio)
+        `)
+        .eq('tipo', 'salida')
+        .gte('fecha', primerDiaMes);
+
+      const totalVentasMes = salidasMes?.reduce((acc, salida) => {
+        const precio = salida.producto?.precio || 0;
+        return acc + (salida.cantidad * precio);
+      }, 0) || 0;
 
       setEstadisticas({
         stockTotal,
@@ -51,23 +58,24 @@ export default function EstadisticasInventarioPage() {
         ventasMes: totalVentasMes,
       });
 
-      // Obtener productos más vendidos
-      const { data: detallesVentas } = await supabase
-        .from('detalle_ventas')
+      // Obtener productos más vendidos (basado en salidas)
+      const { data: movimientosSalida } = await supabase
+        .from('movimientos_inventario')
         .select(`
           cantidad,
-          precio_unitario,
-          producto:productos(nombre)
-        `);
+          producto:productos(nombre, precio)
+        `)
+        .eq('tipo', 'salida');
 
       // Agrupar por producto
-      const ventasPorProducto = detallesVentas?.reduce((acc: any, detalle: any) => {
-        const nombre = detalle.producto?.nombre || 'Desconocido';
+      const ventasPorProducto = movimientosSalida?.reduce((acc: any, movimiento: any) => {
+        const nombre = movimiento.producto?.nombre || 'Desconocido';
+        const precio = movimiento.producto?.precio || 0;
         if (!acc[nombre]) {
           acc[nombre] = { nombre, ventas: 0, ingresos: 0 };
         }
-        acc[nombre].ventas += detalle.cantidad;
-        acc[nombre].ingresos += detalle.cantidad * Number(detalle.precio_unitario);
+        acc[nombre].ventas += movimiento.cantidad;
+        acc[nombre].ingresos += movimiento.cantidad * precio;
         return acc;
       }, {});
 
@@ -77,23 +85,33 @@ export default function EstadisticasInventarioPage() {
 
       setProductosTop(topProductos);
 
-      // Cargar ventas de los últimos 7 días
+      // Cargar ventas de los últimos 7 días (basado en salidas)
       const ventasPorDia: number[] = [];
       for (let i = 6; i >= 0; i--) {
         const fecha = new Date();
         fecha.setDate(fecha.getDate() - i);
-        const fechaStr = fecha.toISOString().split('T')[0];
-        const fechaSiguiente = new Date(fecha);
-        fechaSiguiente.setDate(fechaSiguiente.getDate() + 1);
+        fecha.setHours(0, 0, 0, 0);
+        const fechaInicio = fecha.toISOString();
 
-        const { data: ventasDia } = await supabase
-          .from('ventas')
-          .select('total')
-          .gte('fecha', fechaStr)
-          .lt('fecha', fechaSiguiente.toISOString().split('T')[0])
-          .eq('estado', 'completada');
+        const fechaFin = new Date(fecha);
+        fechaFin.setDate(fechaFin.getDate() + 1);
+        const fechaFinStr = fechaFin.toISOString();
 
-        const totalDia = ventasDia?.reduce((acc, v) => acc + Number(v.total), 0) || 0;
+        const { data: salidasDia } = await supabase
+          .from('movimientos_inventario')
+          .select(`
+            cantidad,
+            producto:productos(precio)
+          `)
+          .eq('tipo', 'salida')
+          .gte('fecha', fechaInicio)
+          .lt('fecha', fechaFinStr);
+
+        const totalDia = salidasDia?.reduce((acc, salida) => {
+          const precio = salida.producto?.precio || 0;
+          return acc + (salida.cantidad * precio);
+        }, 0) || 0;
+
         ventasPorDia.push(totalDia);
       }
       setVentasSemana(ventasPorDia);
@@ -263,22 +281,31 @@ export default function EstadisticasInventarioPage() {
         </div>
 
         {/* Gráfico de barras con datos reales */}
-        <div className="grid grid-cols-7 gap-3 h-64 items-end">
+        <div className="flex items-end justify-between h-64 gap-3">
           {ventasSemana.map((valor, i) => {
-            const maxVenta = Math.max(...ventasSemana, 1);
-            const altura = (valor / maxVenta) * 100;
+            const maxVenta = Math.max(...ventasSemana, 100);
+            const altura = maxVenta > 0 ? (valor / maxVenta) * 100 : 0;
+
+            // Calcular el día correcto basado en la fecha actual
+            const fecha = new Date();
+            fecha.setDate(fecha.getDate() - (6 - i));
+            const diaSemana = fecha.getDay(); // 0 = Domingo, 1 = Lunes, etc.
+            const nombresDias = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+            const nombreDia = nombresDias[diaSemana];
 
             return (
-              <div key={i} className="flex flex-col items-center gap-2">
+              <div key={i} className="flex-1 flex flex-col items-center justify-end h-full gap-2">
                 <span className="text-xs font-semibold text-gray-700">
                   ${valor.toLocaleString('es-ES', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                 </span>
-                <div
-                  className="w-full bg-gradient-to-t from-blue-500 to-indigo-400 rounded-t-lg transition-all hover:from-blue-600 hover:to-indigo-500 cursor-pointer"
-                  style={{ height: `${altura || 5}%` }}
-                ></div>
-                <span className="text-xs text-gray-500 mt-1">
-                  {['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'][i]}
+                <div className="w-full flex flex-col justify-end" style={{ height: '85%' }}>
+                  <div
+                    className="w-full bg-gradient-to-t from-blue-500 to-indigo-400 rounded-t-lg transition-all hover:from-blue-600 hover:to-indigo-500 cursor-pointer"
+                    style={{ height: altura > 0 ? `${altura}%` : '4px', minHeight: '4px' }}
+                  ></div>
+                </div>
+                <span className="text-xs text-gray-500 font-medium">
+                  {nombreDia}
                 </span>
               </div>
             );
