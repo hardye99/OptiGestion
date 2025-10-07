@@ -4,8 +4,17 @@ import { useState, useEffect } from "react";
 import { Plus, TrendingUp, TrendingDown, Package, Calendar, Filter, Search, X } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { MovimientoConProducto } from "@/lib/types";
+import { RoleGuard } from "@/components/RoleGuard";
 
 export default function HistorialMovimientosPage() {
+  return (
+    <RoleGuard allowedRoles={["desarrollador", "dueño"]}>
+      <MovimientosContent />
+    </RoleGuard>
+  );
+}
+
+function MovimientosContent() {
   const [filtroTipo, setFiltroTipo] = useState("todos");
   const [busqueda, setBusqueda] = useState("");
   const [movimientos, setMovimientos] = useState<MovimientoConProducto[]>([]);
@@ -52,8 +61,10 @@ export default function HistorialMovimientosPage() {
   const cargarEstadisticas = async () => {
     try {
       const hoy = new Date();
-      hoy.setHours(0, 0, 0, 0);
-      const inicioHoy = hoy.toISOString();
+      const año = hoy.getFullYear();
+      const mes = String(hoy.getMonth() + 1).padStart(2, '0');
+      const dia = String(hoy.getDate()).padStart(2, '0');
+      const inicioHoy = `${año}-${mes}-${dia}T00:00:00`;
 
       // Entradas de hoy
       const { data: entradas } = await supabase
@@ -128,6 +139,16 @@ export default function HistorialMovimientosPage() {
       }
 
       // Insertar movimiento - el trigger de Supabase actualizará el stock automáticamente
+      // Usar fecha y hora local sin conversión a UTC
+      const ahora = new Date();
+      const año = ahora.getFullYear();
+      const mes = String(ahora.getMonth() + 1).padStart(2, '0');
+      const dia = String(ahora.getDate()).padStart(2, '0');
+      const hora = String(ahora.getHours()).padStart(2, '0');
+      const minutos = String(ahora.getMinutes()).padStart(2, '0');
+      const segundos = String(ahora.getSeconds()).padStart(2, '0');
+      const fechaLocal = `${año}-${mes}-${dia}T${hora}:${minutos}:${segundos}`;
+
       const { error: errorMovimiento } = await supabase
         .from('movimientos_inventario')
         .insert({
@@ -135,7 +156,7 @@ export default function HistorialMovimientosPage() {
           tipo: nuevoMovimiento.tipo,
           cantidad: nuevoMovimiento.cantidad,
           motivo: nuevoMovimiento.motivo || null,
-          fecha: new Date().toISOString(),
+          fecha: fechaLocal,
           usuario: 'Sistema'
         });
 
@@ -316,7 +337,14 @@ export default function HistorialMovimientosPage() {
                     </span>
                   </td>
                   <td className="px-6 py-4 text-gray-600">
-                    {new Date(mov.fecha).toLocaleDateString('es-ES')}
+                    {(() => {
+                      // Convertir la fecha UTC a hora local
+                      const fecha = new Date(mov.fecha);
+                      const dia = String(fecha.getDate()).padStart(2, '0');
+                      const mes = String(fecha.getMonth() + 1).padStart(2, '0');
+                      const año = fecha.getFullYear();
+                      return `${dia}/${mes}/${año}`;
+                    })()}
                   </td>
                   <td className="px-6 py-4 text-gray-600">{mov.usuario || 'Sistema'}</td>
                   <td className="px-6 py-4">

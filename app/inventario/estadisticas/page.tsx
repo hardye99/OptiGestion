@@ -4,8 +4,17 @@ import { BarChart3, TrendingUp, Package, DollarSign, Calendar, ArrowUp, ArrowDow
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { EstadisticaInventario } from "@/lib/types";
+import { RoleGuard } from "@/components/RoleGuard";
 
 export default function EstadisticasInventarioPage() {
+  return (
+    <RoleGuard allowedRoles={["desarrollador", "dueño"]}>
+      <EstadisticasContent />
+    </RoleGuard>
+  );
+}
+
+function EstadisticasContent() {
   const [loading, setLoading] = useState(true);
   const [estadisticas, setEstadisticas] = useState({
     stockTotal: 0,
@@ -36,7 +45,9 @@ export default function EstadisticasInventarioPage() {
 
       // Obtener salidas del mes (ventas)
       const now = new Date();
-      const primerDiaMes = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+      const año = now.getFullYear();
+      const mes = String(now.getMonth() + 1).padStart(2, '0');
+      const primerDiaMes = `${año}-${mes}-01T00:00:00`;
 
       const { data: salidasMes } = await supabase
         .from('movimientos_inventario')
@@ -90,12 +101,13 @@ export default function EstadisticasInventarioPage() {
       for (let i = 6; i >= 0; i--) {
         const fecha = new Date();
         fecha.setDate(fecha.getDate() - i);
-        fecha.setHours(0, 0, 0, 0);
-        const fechaInicio = fecha.toISOString();
 
-        const fechaFin = new Date(fecha);
-        fechaFin.setDate(fechaFin.getDate() + 1);
-        const fechaFinStr = fechaFin.toISOString();
+        // Usar la hora local en lugar de UTC para evitar desfases de zona horaria
+        const año = fecha.getFullYear();
+        const mes = String(fecha.getMonth() + 1).padStart(2, '0');
+        const dia = String(fecha.getDate()).padStart(2, '0');
+        const fechaInicio = `${año}-${mes}-${dia}T00:00:00`;
+        const fechaFin = `${año}-${mes}-${dia}T23:59:59`;
 
         const { data: salidasDia } = await supabase
           .from('movimientos_inventario')
@@ -105,7 +117,7 @@ export default function EstadisticasInventarioPage() {
           `)
           .eq('tipo', 'salida')
           .gte('fecha', fechaInicio)
-          .lt('fecha', fechaFinStr);
+          .lte('fecha', fechaFin);
 
         const totalDia = salidasDia?.reduce((acc, salida) => {
           const precio = salida.producto?.precio || 0;

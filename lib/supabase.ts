@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
+import { createBrowserClient } from '@supabase/ssr';
 
 // Validación de variables de entorno
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -8,5 +8,5 @@ if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('Falta configurar las variables de entorno de Supabase');
 }
 
-// Cliente de Supabase
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+// Cliente de Supabase para el navegador con manejo de cookies
+export const supabase = createBrowserClient(supabaseUrl, supabaseAnonKey);

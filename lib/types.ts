@@ -2,6 +2,19 @@
 // TIPOS PARA LAS TABLAS DE SUPABASE
 // ============================================
 
+// Tipos de roles de usuario
+export type UserRole = 'desarrollador' | 'dueño' | 'empleado';
+
+export interface UserProfile {
+  id: string;
+  email: string;
+  nombre: string;
+  empresa?: string;
+  role: UserRole;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface Cliente {
   id: string;
   nombre: string;

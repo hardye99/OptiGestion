@@ -1,101 +1,94 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { Eye, EyeOff, Mail, Lock, AlertCircle, Sparkles, CheckCircle } from "lucide-react";
+import { Eye, EyeOff, Mail, Lock, AlertCircle, Sparkles, User, Building, CheckCircle } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
-export default function LoginPage() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+export default function RegisterPage() {
+  const [formData, setFormData] = useState({
+    nombre: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
+    empresa: "",
+  });
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
-  const { signIn, user, profile } = useAuth();
+  const { signUp } = useAuth();
   const router = useRouter();
-
-  useEffect(() => {
-    // Redirigir automáticamente si el usuario ya está autenticado
-    if (user) {
-      router.push("/");
-    }
-  }, [user, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    setSuccess(false);
 
-    if (!email || !password) {
-      setError("Por favor completa todos los campos");
+    // Validaciones
+    if (!formData.nombre || !formData.email || !formData.password || !formData.confirmPassword) {
+      setError("Por favor completa todos los campos obligatorios");
+      toast.error("Error en el formulario", {
+        description: "Por favor completa todos los campos obligatorios",
+      });
+      return;
+    }
+
+    if (formData.password.length < 6) {
+      setError("La contraseña debe tener al menos 6 caracteres");
+      toast.error("Contraseña inválida", {
+        description: "La contraseña debe tener al menos 6 caracteres",
+      });
+      return;
+    }
+
+    if (formData.password !== formData.confirmPassword) {
+      setError("Las contraseñas no coinciden");
+      toast.error("Error en el formulario", {
+        description: "Las contraseñas no coinciden",
+      });
       return;
     }
 
     setLoading(true);
-    const { error: signInError } = await signIn(email, password);
 
-    if (signInError) {
-      setLoading(false);
-      setError(signInError);
-      toast.error("Error al iniciar sesión", {
-        description: signInError,
+    const { error: signUpError } = await signUp(formData.email, formData.password, {
+      nombre: formData.nombre,
+      empresa: formData.empresa,
+    });
+
+    setLoading(false);
+
+    if (signUpError) {
+      setError(signUpError);
+      toast.error("Error al crear cuenta", {
+        description: signUpError,
       });
     } else {
-      toast.success("¡Bienvenido!", {
-        description: "Has iniciado sesión correctamente",
+      setSuccess(true);
+      toast.success("¡Cuenta creada exitosamente!", {
+        description: "Redirigiendo al login...",
       });
-      // Esperar un momento para que las cookies se actualicen antes de redirigir
-      await new Promise(resolve => setTimeout(resolve, 500));
-      window.location.href = "/";
+      setTimeout(() => {
+        router.push("/login");
+      }, 2000);
     }
   };
 
-  // Si el usuario ya está autenticado, mostrar pantalla de bienvenida mientras redirige
-  if (user) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
-        <div className="max-w-md w-full mx-4">
-          <div className="bg-white rounded-2xl shadow-2xl p-8 text-center">
-            <div className="mb-6">
-              <div className="inline-flex items-center justify-center w-16 h-16 bg-green-100 rounded-full mb-4">
-                <CheckCircle className="h-8 w-8 text-green-600" />
-              </div>
-              <h1 className="text-2xl font-bold text-gray-800 mb-2">
-                ¡Ya has iniciado sesión!
-              </h1>
-              <p className="text-gray-600">
-                Bienvenido de vuelta, {profile?.nombre || user.email}
-              </p>
-              {profile && (
-                <div className="mt-4 inline-block">
-                  <span className={`px-3 py-1 rounded-full text-sm font-semibold ${
-                    profile.role === 'desarrollador'
-                      ? 'bg-purple-100 text-purple-700'
-                      : profile.role === 'dueño'
-                      ? 'bg-yellow-100 text-yellow-700'
-                      : 'bg-blue-100 text-blue-700'
-                  }`}>
-                    {profile.role.charAt(0).toUpperCase() + profile.role.slice(1)}
-                  </span>
-                </div>
-              )}
-            </div>
-            <button
-              onClick={() => router.push("/")}
-              className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white py-3 rounded-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
-            >
-              Ir al Dashboard
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value,
+    });
+    setError("");
+  };
 
   return (
-    <div className="min-h-screen flex items-center justify-center">
-      {/* Fondo decorativo - ahora sin position absolute */}
+    <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center py-8">
+      {/* Fondo decorativo */}
       <div className="fixed inset-0 -z-10 pointer-events-none">
         <div className="absolute -top-40 -right-40 w-80 h-80 bg-blue-200 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-blob"></div>
         <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-indigo-200 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-blob animation-delay-2000"></div>
@@ -115,10 +108,10 @@ export default function LoginPage() {
             </h1>
             <Sparkles className="h-5 w-5 text-yellow-500" />
           </div>
-          <p className="text-gray-600">Inicia sesión en tu cuenta</p>
+          <p className="text-gray-600">Crea tu cuenta</p>
         </div>
 
-        {/* Formulario de login */}
+        {/* Formulario de registro */}
         <div className="bg-white/80 backdrop-blur-sm shadow-2xl rounded-2xl p-8 border border-white/50">
           <form onSubmit={handleSubmit} className="space-y-5">
             {/* Error message */}
@@ -129,21 +122,63 @@ export default function LoginPage() {
               </div>
             )}
 
+            {/* Success message */}
+            {success && (
+              <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg flex items-center gap-2">
+                <CheckCircle className="h-5 w-5" />
+                <span className="text-sm">¡Cuenta creada exitosamente! Redirigiendo al login...</span>
+              </div>
+            )}
+
+            {/* Nombre */}
+            <div>
+              <label className="block text-gray-700 font-medium mb-2">
+                Nombre Completo <span className="text-red-500">*</span>
+              </label>
+              <div className="relative">
+                <User className="absolute left-3 top-3.5 h-5 w-5 text-gray-400" />
+                <input
+                  type="text"
+                  name="nombre"
+                  value={formData.nombre}
+                  onChange={handleChange}
+                  placeholder="Juan Pérez"
+                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
+                />
+              </div>
+            </div>
+
             {/* Email */}
             <div>
               <label className="block text-gray-700 font-medium mb-2">
-                Correo Electrónico
+                Correo Electrónico <span className="text-red-500">*</span>
               </label>
               <div className="relative">
                 <Mail className="absolute left-3 top-3.5 h-5 w-5 text-gray-400" />
                 <input
                   type="email"
-                  value={email}
-                  onChange={(e) => {
-                    setEmail(e.target.value);
-                    setError("");
-                  }}
+                  name="email"
+                  value={formData.email}
+                  onChange={handleChange}
                   placeholder="tu@email.com"
+                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
+                />
+              </div>
+            </div>
+
+            {/* Empresa (opcional) */}
+            <div>
+              <label className="block text-gray-700 font-medium mb-2">
+                Empresa (Opcional)
+              </label>
+              <div className="relative">
+                <Building className="absolute left-3 top-3.5 h-5 w-5 text-gray-400" />
+                <input
+                  type="text"
+                  name="empresa"
+                  value={formData.empresa}
+                  onChange={handleChange}
+                  placeholder="Óptica XYZ"
                   className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
                 />
               </div>
@@ -152,17 +187,15 @@ export default function LoginPage() {
             {/* Password */}
             <div>
               <label className="block text-gray-700 font-medium mb-2">
-                Contraseña
+                Contraseña <span className="text-red-500">*</span>
               </label>
               <div className="relative">
                 <Lock className="absolute left-3 top-3.5 h-5 w-5 text-gray-400" />
                 <input
                   type={showPassword ? "text" : "password"}
-                  value={password}
-                  onChange={(e) => {
-                    setPassword(e.target.value);
-                    setError("");
-                  }}
+                  name="password"
+                  value={formData.password}
+                  onChange={handleChange}
                   placeholder="••••••••"
                   className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
                 />
@@ -178,31 +211,69 @@ export default function LoginPage() {
                   )}
                 </button>
               </div>
+              <p className="text-xs text-gray-500 mt-1">Mínimo 6 caracteres</p>
             </div>
 
-            {/* Recordar y olvidé contraseña */}
-            <div className="flex items-center justify-between text-sm">
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                />
-                <span className="text-gray-600">Recordarme</span>
+            {/* Confirm Password */}
+            <div>
+              <label className="block text-gray-700 font-medium mb-2">
+                Confirmar Contraseña <span className="text-red-500">*</span>
               </label>
-              <Link href="/recuperar-password">
-                <span className="text-blue-600 hover:text-blue-700 font-medium">
-                  ¿Olvidaste tu contraseña?
-                </span>
-              </Link>
+              <div className="relative">
+                <Lock className="absolute left-3 top-3.5 h-5 w-5 text-gray-400" />
+                <input
+                  type={showConfirmPassword ? "text" : "password"}
+                  name="confirmPassword"
+                  value={formData.confirmPassword}
+                  onChange={handleChange}
+                  placeholder="••••••••"
+                  className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute right-3 top-3.5 text-gray-400 hover:text-gray-600 transition"
+                >
+                  {showConfirmPassword ? (
+                    <EyeOff className="h-5 w-5" />
+                  ) : (
+                    <Eye className="h-5 w-5" />
+                  )}
+                </button>
+              </div>
             </div>
 
-            {/* Botón de login */}
+            {/* Términos y condiciones */}
+            <div className="flex items-start gap-2">
+              <input
+                type="checkbox"
+                id="terms"
+                required
+                className="w-4 h-4 mt-1 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+              />
+              <label htmlFor="terms" className="text-sm text-gray-600">
+                Acepto los{" "}
+                <Link href="/terminos">
+                  <span className="text-blue-600 hover:text-blue-700 font-medium">
+                    términos y condiciones
+                  </span>
+                </Link>{" "}
+                y la{" "}
+                <Link href="/privacidad">
+                  <span className="text-blue-600 hover:text-blue-700 font-medium">
+                    política de privacidad
+                  </span>
+                </Link>
+              </label>
+            </div>
+
+            {/* Botón de registro */}
             <button
               type="submit"
               disabled={loading}
               className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white py-3 rounded-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:transform-none"
             >
-              {loading ? "Iniciando sesión..." : "Iniciar Sesión"}
+              {loading ? "Creando cuenta..." : "Crear Cuenta"}
             </button>
           </form>
 
@@ -212,7 +283,7 @@ export default function LoginPage() {
               <div className="w-full border-t border-gray-300"></div>
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-white text-gray-500">o continúa con</span>
+              <span className="px-2 bg-white text-gray-500">o regístrate con</span>
             </div>
           </div>
 
@@ -236,12 +307,12 @@ export default function LoginPage() {
             </button>
           </div>
 
-          {/* Registro */}
+          {/* Login */}
           <p className="mt-6 text-center text-sm text-gray-600">
-            ¿No tienes cuenta?{" "}
-            <Link href="/registro">
+            ¿Ya tienes cuenta?{" "}
+            <Link href="/login">
               <span className="text-blue-600 hover:text-blue-700 font-semibold">
-                Regístrate aquí
+                Inicia sesión aquí
               </span>
             </Link>
           </p>
