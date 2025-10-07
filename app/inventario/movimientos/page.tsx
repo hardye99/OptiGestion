@@ -338,11 +338,10 @@ function MovimientosContent() {
                   </td>
                   <td className="px-6 py-4 text-gray-600">
                     {(() => {
-                      // Convertir la fecha UTC a hora local
-                      const fecha = new Date(mov.fecha);
-                      const dia = String(fecha.getDate()).padStart(2, '0');
-                      const mes = String(fecha.getMonth() + 1).padStart(2, '0');
-                      const año = fecha.getFullYear();
+                      // Extraer la fecha directamente del string ISO sin conversión UTC
+                      const fechaStr = mov.fecha.toString();
+                      const [fecha] = fechaStr.split('T');
+                      const [año, mes, dia] = fecha.split('-');
                       return `${dia}/${mes}/${año}`;
                     })()}
                   </td>

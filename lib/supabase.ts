@@ -9,4 +9,9 @@ if (!supabaseUrl || !supabaseAnonKey) {
 }
 
 // Cliente de Supabase para el navegador con manejo de cookies
-export const supabase = createBrowserClient(supabaseUrl, supabaseAnonKey);
+export const supabase = createBrowserClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    autoRefreshToken: true,
+    persistSession: true,
+  },
+});

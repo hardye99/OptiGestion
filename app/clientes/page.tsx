@@ -210,12 +210,16 @@ export default function ClientesPage() {
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center justify-end gap-2">
-                        <button className="p-2 hover:bg-blue-50 rounded-lg transition" title="Ver detalles">
-                          <Eye className="h-5 w-5 text-blue-600" />
-                        </button>
-                        <button className="p-2 hover:bg-green-50 rounded-lg transition" title="Editar">
-                          <Edit className="h-5 w-5 text-green-600" />
-                        </button>
+                        <Link href={`/clientes/${cliente.id}`}>
+                          <button className="p-2 hover:bg-blue-50 rounded-lg transition" title="Ver detalles">
+                            <Eye className="h-5 w-5 text-blue-600" />
+                          </button>
+                        </Link>
+                        <Link href={`/clientes/${cliente.id}/editar`}>
+                          <button className="p-2 hover:bg-green-50 rounded-lg transition" title="Editar">
+                            <Edit className="h-5 w-5 text-green-600" />
+                          </button>
+                        </Link>
                         <button
                           onClick={() => eliminarCliente(cliente.id)}
                           className="p-2 hover:bg-red-50 rounded-lg transition"

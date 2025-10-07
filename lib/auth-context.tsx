@@ -29,115 +29,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Función para obtener el perfil del usuario
   const fetchProfile = async (userId: string) => {
     try {
-      console.log('🔍 Intentando obtener perfil para userId:', userId);
-
-      // Agregar timeout de 5 segundos
-      const timeoutPromise = new Promise((resolve) =>
-        setTimeout(() => resolve({ data: null, error: null, timedOut: true }), 5000)
-      );
-
-      const queryPromise = supabase
+      const { data, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', userId)
-        .single()
-        .then(result => ({ ...result, timedOut: false }));
-
-      const result = await Promise.race([queryPromise, timeoutPromise]) as any;
-
-      // Si hubo timeout, refrescar sesión y reintentar
-      if (result.timedOut) {
-        console.log('⏱️ TIMEOUT DETECTADO después de 5 segundos');
-        console.log('🔄 Intentando refrescar sesión...');
-
-        const { data: { session }, error: refreshError } = await supabase.auth.refreshSession();
-
-        if (refreshError) {
-          console.error('❌ Error al refrescar sesión:', refreshError);
-          setProfile(null);
-          return;
-        }
-
-        if (session) {
-          console.log('✅ Sesión refrescada exitosamente');
-          console.log('🔄 Reintentando cargar perfil...');
-
-          const { data, error } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', userId)
-            .single();
-
-          if (!error && data) {
-            console.log('✅ ÉXITO: Perfil cargado después de refrescar sesión:', data);
-            setProfile(data as UserProfile);
-            return;
-          } else if (error) {
-            console.error('❌ FALLO: Error al cargar perfil después de refrescar sesión:', {
-              code: error.code,
-              message: error.message,
-              details: error.details
-            });
-            setProfile(null);
-            return;
-          }
-        } else {
-          console.error('❌ No se pudo obtener sesión después de refrescar');
-          setProfile(null);
-          return;
-        }
-      }
-
-      const { data, error } = result;
-
-      console.log('📦 Respuesta de Supabase:', { data, error, hasData: !!data, hasError: !!error });
+        .single();
 
       if (error) {
-        console.error('❌ Error al obtener perfil:', {
-          code: error.code,
-          message: error.message,
-          details: error.details,
-          hint: error.hint,
-          userId: userId,
-        });
-
-        // Si es error PGRST116 (no encontrado), el perfil no existe
-        if (error.code === 'PGRST116') {
-          console.warn('⚠️ Perfil no encontrado para userId:', userId);
-          console.warn('Esperando 2 segundos para que el trigger cree el perfil...');
-        } else if (error.code === 'PGRST301') {
-          console.error('❌ Error de políticas RLS - el usuario no tiene permiso para leer su perfil');
-          console.error('👉 Ejecuta el script supabase-FIX-SELECT-POLICY.sql');
-        }
-
-        // Reintentar una vez después de un delay
-        setTimeout(async () => {
-          console.log('🔄 Reintentando obtener perfil...');
-          const { data: retryData, error: retryError } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', userId)
-            .single();
-
-          if (!retryError && retryData) {
-            console.log('✅ Perfil cargado exitosamente en reintento:', retryData);
-            setProfile(retryData as UserProfile);
-          } else {
-            console.error('❌ Error al reintentar obtener perfil:', {
-              code: retryError?.code,
-              message: retryError?.message,
-              userId: userId,
-            });
-            setProfile(null);
-          }
-        }, 2000);
+        console.error('Error al obtener perfil:', error);
+        setProfile(null);
         return;
       }
 
-      console.log('✅ Perfil cargado exitosamente:', data);
       setProfile(data as UserProfile);
     } catch (error) {
-      console.error('❌ Error inesperado al obtener perfil:', error);
+      console.error('Error inesperado al obtener perfil:', error);
       setProfile(null);
     }
   };
@@ -185,45 +91,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setLoading(false);
     });
 
-    // Refrescar sesión cada 4 minutos para evitar expiración
+    // Refrescar sesión cada 50 minutos
     const refreshInterval = setInterval(async () => {
-      console.log('🔄 Refrescando sesión automáticamente...');
-      const { data: { session }, error } = await supabase.auth.refreshSession();
-      if (error) {
-        console.error('❌ Error al refrescar sesión:', error);
-      } else if (session) {
+      const { error } = await supabase.auth.refreshSession();
+      if (!error) {
         console.log('✅ Sesión refrescada automáticamente');
       }
-    }, 4 * 60 * 1000); // 4 minutos
+    }, 50 * 60 * 1000);
 
-    // Refrescar sesión cuando la pestaña vuelve a estar activa
-    const handleVisibilityChange = async () => {
+    // Recargar página cuando vuelves a la pestaña (solución simple y efectiva)
+    const handleVisibilityChange = () => {
       if (!document.hidden) {
-        console.log('👀 Pestaña activa - Verificando sesión...');
-
-        // Crear un timeout que recargue la página si tarda más de 2 segundos
-        const reloadTimeout = setTimeout(() => {
-          console.log('⏱️ Timeout detectado al volver, recargando página...');
-          window.location.reload();
-        }, 2000);
-
-        try {
-          const { data: { session: currentSession } } = await supabase.auth.getSession();
-
-          clearTimeout(reloadTimeout); // Cancelar recarga si la sesión se obtuvo a tiempo
-
-          if (currentSession?.user) {
-            console.log('✅ Sesión válida encontrada, cargando perfil...');
-            await fetchProfile(currentSession.user.id);
-          } else {
-            console.log('⚠️ No hay sesión válida, recargando página...');
-            window.location.reload();
-          }
-        } catch (err) {
-          clearTimeout(reloadTimeout);
-          console.error('❌ Error al verificar sesión:', err);
-          window.location.reload();
-        }
+        console.log('🔄 Volviste a la pestaña, recargando página...');
+        window.location.reload();
       }
     };
 
