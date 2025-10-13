@@ -1,8 +1,7 @@
 import "./globals.css";
 import { Sidebar } from "@/components/SideBar";
-import { AuthProvider } from "@/lib/auth-context";
-import { Toaster } from "sonner";
 import type { ReactNode } from "react";
+import { Suspense } from 'react'; // <-- IMPORTAR SUSPENSE
 
 export const metadata = {
   title: "OptiGestión",
@@ -17,13 +16,13 @@ export default function RootLayout({ children }: RootLayoutProps) {
   return (
     <html lang="es">
       <body className="flex min-h-screen bg-gray-50">
-        <AuthProvider>
-          <Sidebar />
-          <main className="flex-1 p-8 overflow-y-auto">
+        <Sidebar />
+        <main className="flex-1 p-8 overflow-y-auto">
+          {/* Envolver children en Suspense para manejar componentes dinámicos */}
+          <Suspense fallback={<div>Cargando contenido...</div>}>
             {children}
-          </main>
-          <Toaster position="top-right" richColors />
-        </AuthProvider>
+          </Suspense>
+        </main>
       </body>
     </html>
   );
