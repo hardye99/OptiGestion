@@ -35,6 +35,7 @@ export default function NuevoClientePage() {
     setLoading(true);
 
     try {
+      // 1. Crear el cliente en la base de datos
       const { data, error } = await supabase
         .from('clientes')
         .insert([{
@@ -54,6 +55,31 @@ export default function NuevoClientePage() {
       if (error) throw error;
 
       toast.success('Cliente creado exitosamente');
+
+      // 2. Enviar email de bienvenida (sin bloquear la respuesta)
+      try {
+        const emailResponse = await fetch('/api/email/bienvenida', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            nombre: formData.nombre,
+            apellido: formData.apellido,
+            email: formData.email,
+          }),
+        });
+
+        if (emailResponse.ok) {
+          toast.success('Email de bienvenida enviado');
+        } else {
+          console.warn('No se pudo enviar el email de bienvenida');
+        }
+      } catch (emailError) {
+        console.error('Error al enviar email de bienvenida:', emailError);
+        // No mostramos error al usuario, el cliente ya fue creado
+      }
+
       router.push('/clientes');
     } catch (error: any) {
       console.error('Error al crear cliente:', error);

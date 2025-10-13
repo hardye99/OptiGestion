@@ -58,7 +58,7 @@ function EstadisticasContent() {
         .eq('tipo', 'salida')
         .gte('fecha', primerDiaMes);
 
-      const totalVentasMes = salidasMes?.reduce((acc, salida) => {
+      const totalVentasMes = salidasMes?.reduce((acc, salida: any) => {
         const precio = salida.producto?.precio || 0;
         return acc + (salida.cantidad * precio);
       }, 0) || 0;
@@ -119,7 +119,7 @@ function EstadisticasContent() {
           .gte('fecha', fechaInicio)
           .lte('fecha', fechaFin);
 
-        const totalDia = salidasDia?.reduce((acc, salida) => {
+        const totalDia = salidasDia?.reduce((acc, salida: any) => {
           const precio = salida.producto?.precio || 0;
           return acc + (salida.cantidad * precio);
         }, 0) || 0;

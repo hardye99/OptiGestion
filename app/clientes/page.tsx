@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Search, Plus, Edit, Trash2, Eye, Phone, Mail, User } from "lucide-react";
+import { Search, Plus, Edit, Trash2, Eye, Phone, Mail, User, FileText } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { Cliente } from "@/lib/types";
 import { toast } from "sonner";
@@ -213,6 +213,11 @@ export default function ClientesPage() {
                         <Link href={`/clientes/${cliente.id}`}>
                           <button className="p-2 hover:bg-blue-50 rounded-lg transition" title="Ver detalles">
                             <Eye className="h-5 w-5 text-blue-600" />
+                          </button>
+                        </Link>
+                        <Link href={`/recetas/nueva?cliente=${cliente.id}`}>
+                          <button className="p-2 hover:bg-purple-50 rounded-lg transition" title="Crear receta">
+                            <FileText className="h-5 w-5 text-purple-600" />
                           </button>
                         </Link>
                         <Link href={`/clientes/${cliente.id}/editar`}>
