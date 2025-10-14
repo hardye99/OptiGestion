@@ -11,8 +11,10 @@ interface AuthLayoutProps {
 }
 
 // Este componente aplica la lógica de redirección y la estructura visual
+// Este componente aplica la lógica de redirección y la estructura visual
 function AppStructure({ children }: AuthLayoutProps) {
-  const { user, loading } = useAuth();
+  // *** CAMBIO 1: Incluir 'profile' en la desestructuración de useAuth ***
+  const { user, profile, loading } = useAuth();
   const router = useRouter();
 
   // Función auxiliar para obtener la ruta de forma segura en el servidor
@@ -33,13 +35,21 @@ function AppStructure({ children }: AuthLayoutProps) {
         router.replace("/");
       }
     }
-  }, [loading, user, router, isPublicRoute]); // isPublicRoute es segura aquí porque se usa en el chequeo
+  }, [loading, user, router, isPublicRoute]);
 
   // Renderizado para SSR/Client
   if (loading) {
+    // Muestra pantalla de carga inicial de la sesión
     return <div className="flex items-center justify-center min-h-screen bg-gray-50">Cargando sesión...</div>;
   }
   
+  // *** CAMBIO 2: Comprobar el perfil si el usuario existe ***
+  // Si el usuario está autenticado pero el perfil aún no se ha cargado, 
+  // mostramos una pantalla de carga para evitar que Sidebar (u otros) falle.
+  if (user && !profile) { 
+      return <div className="flex items-center justify-center min-h-screen bg-gray-50">Cargando datos de usuario...</div>;
+  }
+
   // Si no hay usuario y estamos en una ruta pública, renderiza el contenido (Login/Registro)
   if (!user && isPublicRoute) {
      return <>{children}</>;
@@ -51,7 +61,7 @@ function AppStructure({ children }: AuthLayoutProps) {
     return <div className="flex items-center justify-center min-h-screen bg-gray-50">Redirigiendo...</div>;
   }
 
-  // Estructura de la aplicación para usuarios autenticados
+  // Estructura de la aplicación para usuarios autenticados (user y profile son válidos aquí)
   return (
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar />
