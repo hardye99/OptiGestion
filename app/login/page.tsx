@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { Eye, EyeOff, Mail, Lock, AlertCircle, Sparkles } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
+import { supabase } from "@/lib/supabase"; // <-- Importar supabase para usarlo directamente en OAuth
 
 export default function LoginPage() {
   const { signIn } = useAuth();
@@ -12,7 +13,7 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
 
- const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!email || !password) {
@@ -30,10 +31,30 @@ export default function LoginPage() {
       setError(signInError);
       return;
     }
-    
-    // La redirección a la página principal (/) la maneja automáticamente
-    // el componente AuthAppLayout/AppStructure después de un inicio de sesión exitoso.
   };
+
+  // NUEVA FUNCIÓN: Iniciar sesión con proveedores externos (OAuth)
+  const signInWithOAuth = async (provider: 'google' | 'facebook') => {
+    setError("");
+    
+    // Obtener la URL base de la aplicación para la redirección después del OAuth
+    // Asumimos que NEXT_PUBLIC_APP_URL está configurada en .env.local (ej. http://localhost:3000)
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || window.location.origin;
+
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: provider,
+      options: {
+        redirectTo: `${appUrl}/auth/callback`, // Debe apuntar a una ruta de callback configurada
+      },
+    });
+
+    if (error) {
+      console.error(`Error al iniciar sesión con ${provider}:`, error);
+      setError(`Error al iniciar sesión con ${provider}. Verifica tu configuración.`);
+    }
+    // Supabase se encarga de la redirección al proveedor
+  };
+
   return (
     <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center">
       {/* Fondo decorativo - ahora sin position absolute */}
@@ -158,7 +179,11 @@ export default function LoginPage() {
 
           {/* Social login buttons */}
           <div className="grid grid-cols-2 gap-3">
-            <button className="flex items-center justify-center gap-2 py-2.5 px-4 border border-gray-300 rounded-lg hover:bg-gray-50 transition">
+            <button 
+              type="button" // Cambio a type="button"
+              onClick={() => signInWithOAuth('google')} // <-- Conexión a Google OAuth
+              className="flex items-center justify-center gap-2 py-2.5 px-4 border border-gray-300 rounded-lg hover:bg-gray-50 transition"
+            >
               <svg className="w-5 h-5" viewBox="0 0 24 24">
                 <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
                 <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
@@ -168,7 +193,11 @@ export default function LoginPage() {
               <span className="text-sm font-medium text-gray-700">Google</span>
             </button>
 
-            <button className="flex items-center justify-center gap-2 py-2.5 px-4 border border-gray-300 rounded-lg hover:bg-gray-50 transition">
+            <button 
+              type="button" // Cambio a type="button"
+              onClick={() => signInWithOAuth('facebook')} // <-- Conexión a Facebook OAuth
+              className="flex items-center justify-center gap-2 py-2.5 px-4 border border-gray-300 rounded-lg hover:bg-gray-50 transition"
+            >
               <svg className="w-5 h-5" fill="#1877F2" viewBox="0 0 24 24">
                 <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
               </svg>
