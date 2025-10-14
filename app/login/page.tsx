@@ -3,14 +3,16 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Eye, EyeOff, Mail, Lock, AlertCircle, Sparkles } from "lucide-react";
+import { useAuth } from "@/lib/auth-context";
 
 export default function LoginPage() {
+  const { signIn } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
 
-  const handleSubmit = (e: React.FormEvent) => {
+ const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!email || !password) {
@@ -18,10 +20,20 @@ export default function LoginPage() {
       return;
     }
 
-    // Aquí iría la lógica de autenticación
-    console.log("Login:", { email, password });
-  };
+    setError(""); // Limpiar errores previos
 
+    // Llamada a la lógica de autenticación en AuthContext
+    const { error: signInError } = await signIn(email, password);
+
+    if (signInError) {
+      // Mostrar error devuelto por Supabase/AuthProvider
+      setError(signInError);
+      return;
+    }
+    
+    // La redirección a la página principal (/) la maneja automáticamente
+    // el componente AuthAppLayout/AppStructure después de un inicio de sesión exitoso.
+  };
   return (
     <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center">
       {/* Fondo decorativo - ahora sin position absolute */}
