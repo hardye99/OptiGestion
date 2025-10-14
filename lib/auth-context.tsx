@@ -50,8 +50,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     console.log('🚀 AuthProvider: Iniciando useEffect');
+
+    // Variables que necesitan 'let' o pueden ser null
     let refreshInterval: NodeJS.Timeout | null = null;
-    let subscription: { unsubscribe: () => void };
     let handleVisibilityChange: (() => void) | null = null;
 
     // Obtener sesión inicial
@@ -78,8 +79,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setLoading(false);
     });
 
-    // Escuchar cambios de autenticación
-    const { data } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    // Escuchar cambios de autenticación. subscription es ahora una const en este scope.
+    const {
+      data: { subscription }, // <-- CORRECCIÓN: Declaración con const
+    } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
 
@@ -91,7 +94,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       setLoading(false);
     });
-    subscription = data.subscription; // Asignar la suscripción para el cleanup
 
     // === Lógica Específica del Navegador (Protegida) ===
     if (typeof window !== 'undefined') {
@@ -116,9 +118,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // ===============================================
 
     return () => {
-      if (subscription) {
-        subscription.unsubscribe();
-      }
+      // Cleanup de la suscripción (es const y existe)
+      subscription.unsubscribe();
+
       if (refreshInterval) {
         clearInterval(refreshInterval);
       }
@@ -127,6 +129,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     };
   }, []);
+  
   const signIn = async (email: string, password: string) => {
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
