@@ -1,3 +1,5 @@
+// app/productos/page.tsx
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -277,7 +279,7 @@ export default function ProductosPage() {
               placeholder="Buscar productos por nombre o marca..."
               value={busqueda}
               onChange={(e) => setBusqueda(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              className="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none text-gray-900"
             />
           </div>
 
@@ -286,7 +288,7 @@ export default function ProductosPage() {
             <select
               value={categoriaFiltro}
               onChange={(e) => setCategoriaFiltro(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none appearance-none bg-white"
+              className="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none appearance-none bg-white text-gray-900"
             >
               <option value="Todas">Todas las categorías</option>
               {categorias.map(cat => (
@@ -409,7 +411,7 @@ export default function ProductosPage() {
                     required
                     value={formData.nombre}
                     onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
-                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none text-gray-900"
                     placeholder="Ej: Gafas Aviador Classic"
                   />
                 </div>
@@ -420,7 +422,7 @@ export default function ProductosPage() {
                     type="text"
                     value={formData.marca}
                     onChange={(e) => setFormData({ ...formData, marca: e.target.value })}
-                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none text-gray-900"
                     placeholder="Ej: Ray-Ban"
                   />
                 </div>
@@ -430,7 +432,7 @@ export default function ProductosPage() {
                   <select
                     value={formData.categoria_id}
                     onChange={(e) => setFormData({ ...formData, categoria_id: e.target.value })}
-                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none text-gray-900"
                   >
                     <option value="">Seleccionar categoría</option>
                     {categorias.map(cat => (
@@ -449,7 +451,7 @@ export default function ProductosPage() {
                     required
                     value={formData.precio}
                     onChange={(e) => setFormData({ ...formData, precio: e.target.value })}
-                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none text-gray-900"
                     placeholder="0.00"
                   />
                 </div>
@@ -463,7 +465,7 @@ export default function ProductosPage() {
                     required
                     value={formData.stock}
                     onChange={(e) => setFormData({ ...formData, stock: e.target.value })}
-                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none text-gray-900"
                     placeholder="0"
                   />
                 </div>
@@ -474,7 +476,7 @@ export default function ProductosPage() {
                     type="number"
                     value={formData.stock_minimo}
                     onChange={(e) => setFormData({ ...formData, stock_minimo: e.target.value })}
-                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none text-gray-900"
                     placeholder="10"
                   />
                 </div>
@@ -485,7 +487,7 @@ export default function ProductosPage() {
                     type="text"
                     value={formData.codigo_barras}
                     onChange={(e) => setFormData({ ...formData, codigo_barras: e.target.value })}
-                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none text-gray-900"
                     placeholder="123456789"
                   />
                 </div>
@@ -495,7 +497,7 @@ export default function ProductosPage() {
                   <textarea
                     value={formData.descripcion}
                     onChange={(e) => setFormData({ ...formData, descripcion: e.target.value })}
-                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none resize-none"
+                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none resize-none text-gray-900"
                     rows={3}
                     placeholder="Descripción del producto..."
                   />
@@ -623,7 +625,7 @@ export default function ProductosPage() {
                   max={productoSeleccionado.stock}
                   value={cantidadVenta}
                   onChange={(e) => setCantidadVenta(parseInt(e.target.value) || 1)}
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none text-gray-900"
                 />
               </div>
 
@@ -685,7 +687,7 @@ export default function ProductosPage() {
                   min="1"
                   value={cantidadAgregar}
                   onChange={(e) => setCantidadAgregar(parseInt(e.target.value) || 1)}
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:outline-none"
+                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:outline-none text-gray-900"
                 />
               </div>
 
