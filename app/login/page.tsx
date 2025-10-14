@@ -1,100 +1,29 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { Eye, EyeOff, Mail, Lock, AlertCircle, Sparkles, CheckCircle } from "lucide-react";
-import { useAuth } from "@/lib/auth-context";
-import { toast } from "sonner";
+import { Eye, EyeOff, Mail, Lock, AlertCircle, Sparkles } from "lucide-react";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
-  const { signIn, user, profile } = useAuth();
-  const router = useRouter();
 
-  useEffect(() => {
-    // Redirigir automáticamente si el usuario ya está autenticado
-    if (user) {
-      router.push("/");
-    }
-  }, [user, router]);
-
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
 
     if (!email || !password) {
       setError("Por favor completa todos los campos");
       return;
     }
 
-    setLoading(true);
-    const { error: signInError } = await signIn(email, password);
-
-    if (signInError) {
-      setLoading(false);
-      setError(signInError);
-      toast.error("Error al iniciar sesión", {
-        description: signInError,
-      });
-    } else {
-      toast.success("¡Bienvenido!", {
-        description: "Has iniciado sesión correctamente",
-      });
-      // Esperar un momento para que las cookies se actualicen antes de redirigir
-      await new Promise(resolve => setTimeout(resolve, 500));
-      window.location.href = "/";
-    }
+    // Aquí iría la lógica de autenticación
+    console.log("Login:", { email, password });
   };
 
-  // Si el usuario ya está autenticado, mostrar pantalla de bienvenida mientras redirige
-  if (user) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
-        <div className="max-w-md w-full mx-4">
-          <div className="bg-white rounded-2xl shadow-2xl p-8 text-center">
-            <div className="mb-6">
-              <div className="inline-flex items-center justify-center w-16 h-16 bg-green-100 rounded-full mb-4">
-                <CheckCircle className="h-8 w-8 text-green-600" />
-              </div>
-              <h1 className="text-2xl font-bold text-gray-800 mb-2">
-                ¡Ya has iniciado sesión!
-              </h1>
-              <p className="text-gray-600">
-                Bienvenido de vuelta, {profile?.nombre || user.email}
-              </p>
-              {profile && (
-                <div className="mt-4 inline-block">
-                  <span className={`px-3 py-1 rounded-full text-sm font-semibold ${
-                    profile.role === 'desarrollador'
-                      ? 'bg-purple-100 text-purple-700'
-                      : profile.role === 'dueño'
-                      ? 'bg-yellow-100 text-yellow-700'
-                      : 'bg-blue-100 text-blue-700'
-                  }`}>
-                    {profile.role.charAt(0).toUpperCase() + profile.role.slice(1)}
-                  </span>
-                </div>
-              )}
-            </div>
-            <button
-              onClick={() => router.push("/")}
-              className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white py-3 rounded-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
-            >
-              Ir al Dashboard
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen flex items-center justify-center">
+    <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center">
       {/* Fondo decorativo - ahora sin position absolute */}
       <div className="fixed inset-0 -z-10 pointer-events-none">
         <div className="absolute -top-40 -right-40 w-80 h-80 bg-blue-200 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-blob"></div>
@@ -144,7 +73,7 @@ export default function LoginPage() {
                     setError("");
                   }}
                   placeholder="tu@email.com"
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
+                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition text-gray-900"
                 />
               </div>
             </div>
@@ -164,7 +93,7 @@ export default function LoginPage() {
                     setError("");
                   }}
                   placeholder="••••••••"
-                  className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
+                  className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition text-gray-900"
                 />
                 <button
                   type="button"
@@ -199,10 +128,9 @@ export default function LoginPage() {
             {/* Botón de login */}
             <button
               type="submit"
-              disabled={loading}
-              className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white py-3 rounded-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:transform-none"
+              className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white py-3 rounded-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-0.5"
             >
-              {loading ? "Iniciando sesión..." : "Iniciar Sesión"}
+              Iniciar Sesión
             </button>
           </form>
 
