@@ -50,6 +50,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     console.log('🚀 AuthProvider: Iniciando useEffect');
+    let refreshInterval: NodeJS.Timeout | null = null;
+    let subscription: { unsubscribe: () => void };
+    let handleVisibilityChange: (() => void) | null = null;
 
     // Obtener sesión inicial
     supabase.auth.getSession().then(async ({ data: { session }, error }) => {
@@ -76,9 +79,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
 
     // Escuchar cambios de autenticación
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    const { data } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
 
@@ -90,32 +91,42 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       setLoading(false);
     });
+    subscription = data.subscription; // Asignar la suscripción para el cleanup
 
-    // Refrescar sesión cada 50 minutos
-    const refreshInterval = setInterval(async () => {
-      const { error } = await supabase.auth.refreshSession();
-      if (!error) {
-        console.log('✅ Sesión refrescada automáticamente');
-      }
-    }, 50 * 60 * 1000);
+    // === Lógica Específica del Navegador (Protegida) ===
+    if (typeof window !== 'undefined') {
+      // Refrescar sesión cada 50 minutos
+      refreshInterval = setInterval(async () => {
+        const { error } = await supabase.auth.refreshSession();
+        if (!error) {
+          console.log('✅ Sesión refrescada automáticamente');
+        }
+      }, 50 * 60 * 1000);
 
-    // Recargar página cuando vuelves a la pestaña (solución simple y efectiva)
-    const handleVisibilityChange = () => {
-      if (!document.hidden) {
-        console.log('🔄 Volviste a la pestaña, recargando página...');
-        window.location.reload();
-      }
-    };
+      // Recargar página cuando vuelves a la pestaña (solución simple y efectiva)
+      handleVisibilityChange = () => {
+        if (!document.hidden) {
+          console.log('🔄 Volviste a la pestaña, recargando página...');
+          window.location.reload();
+        }
+      };
 
-    document.addEventListener('visibilitychange', handleVisibilityChange);
+      document.addEventListener('visibilitychange', handleVisibilityChange);
+    }
+    // ===============================================
 
     return () => {
-      subscription.unsubscribe();
-      clearInterval(refreshInterval);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      if (subscription) {
+        subscription.unsubscribe();
+      }
+      if (refreshInterval) {
+        clearInterval(refreshInterval);
+      }
+      if (handleVisibilityChange) {
+        document.removeEventListener('visibilitychange', handleVisibilityChange);
+      }
     };
   }, []);
-
   const signIn = async (email: string, password: string) => {
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
