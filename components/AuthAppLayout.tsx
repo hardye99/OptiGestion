@@ -2,7 +2,7 @@
 
 import { ReactNode, Suspense } from "react";
 import { Sidebar } from "@/components/SideBar";
-import { AuthProvider, useAuth } from "@/lib/AuthContext"; // Importa el Provider y el Hook
+import { AuthProvider, useAuth } from "@/lib/auth-context"; // Importa el Provider y el Hook
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
