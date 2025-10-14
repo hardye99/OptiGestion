@@ -1,3 +1,5 @@
+// app/clientes/nuevo/page.tsx
+
 "use client";
 
 import { useState } from "react";
@@ -35,7 +37,6 @@ export default function NuevoClientePage() {
     setLoading(true);
 
     try {
-      // 1. Crear el cliente en la base de datos
       const { data, error } = await supabase
         .from('clientes')
         .insert([{
@@ -55,31 +56,6 @@ export default function NuevoClientePage() {
       if (error) throw error;
 
       toast.success('Cliente creado exitosamente');
-
-      // 2. Enviar email de bienvenida (sin bloquear la respuesta)
-      try {
-        const emailResponse = await fetch('/api/email/bienvenida', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            nombre: formData.nombre,
-            apellido: formData.apellido,
-            email: formData.email,
-          }),
-        });
-
-        if (emailResponse.ok) {
-          toast.success('Email de bienvenida enviado');
-        } else {
-          console.warn('No se pudo enviar el email de bienvenida');
-        }
-      } catch (emailError) {
-        console.error('Error al enviar email de bienvenida:', emailError);
-        // No mostramos error al usuario, el cliente ya fue creado
-      }
-
       router.push('/clientes');
     } catch (error: any) {
       console.error('Error al crear cliente:', error);
@@ -125,7 +101,7 @@ export default function NuevoClientePage() {
                 onChange={handleChange}
                 placeholder="Ej: Juan"
                 required
-                className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none text-gray-900"
               />
             </div>
 
@@ -140,7 +116,7 @@ export default function NuevoClientePage() {
                 onChange={handleChange}
                 placeholder="Ej: Pérez"
                 required
-                className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none text-gray-900"
               />
             </div>
 
@@ -157,7 +133,7 @@ export default function NuevoClientePage() {
                   onChange={handleChange}
                   placeholder="correo@ejemplo.com"
                   required
-                  className="w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                  className="w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none text-gray-900"
                 />
               </div>
             </div>
@@ -175,7 +151,7 @@ export default function NuevoClientePage() {
                   onChange={handleChange}
                   placeholder="+1 234-567-8900"
                   required
-                  className="w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                  className="w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none text-gray-900"
                 />
               </div>
             </div>
@@ -191,7 +167,7 @@ export default function NuevoClientePage() {
                   name="fechaNacimiento"
                   value={formData.fechaNacimiento}
                   onChange={handleChange}
-                  className="w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                  className="w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none text-gray-900"
                 />
               </div>
             </div>
@@ -204,7 +180,7 @@ export default function NuevoClientePage() {
                 name="tipoCliente"
                 value={formData.tipoCliente}
                 onChange={handleChange}
-                className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none text-gray-900"
               >
                 <option value="regular">Regular</option>
                 <option value="vip">VIP</option>
@@ -232,7 +208,7 @@ export default function NuevoClientePage() {
                 value={formData.direccion}
                 onChange={handleChange}
                 placeholder="Calle, Número, Piso, Depto..."
-                className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none text-gray-900"
               />
             </div>
 
@@ -246,7 +222,7 @@ export default function NuevoClientePage() {
                 value={formData.ciudad}
                 onChange={handleChange}
                 placeholder="Ej: Madrid"
-                className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none text-gray-900"
               />
             </div>
 
@@ -260,7 +236,7 @@ export default function NuevoClientePage() {
                 value={formData.codigoPostal}
                 onChange={handleChange}
                 placeholder="28001"
-                className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none text-gray-900"
               />
             </div>
           </div>
@@ -279,7 +255,7 @@ export default function NuevoClientePage() {
             onChange={handleChange}
             placeholder="Notas adicionales sobre el cliente, preferencias, alergias, etc..."
             rows={4}
-            className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none resize-none"
+            className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none resize-none text-gray-900"
           />
         </div>
 
