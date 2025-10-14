@@ -12,60 +12,64 @@ interface AuthLayoutProps {
 
 // Este componente aplica la lógica de redirección y la estructura visual
 function AppStructure({ children }: AuthLayoutProps) {
-  // Ahora destructuramos todo el contexto de autenticación
   const { user, profile, loading } = useAuth();
   const router = useRouter();
 
-  // Función auxiliar para obtener la ruta de forma segura en el servidor
+  // Función auxiliar para obtener la ruta de forma segura en el navegador
   const getPathname = () => {
-    // Es seguro llamar a window.location.pathname aquí porque AppStructure es "use client"
     return typeof window !== 'undefined' ? window.location.pathname : '';
   };
   
-  const isPublicRoute = getPathname().startsWith('/login') || getPathname().startsWith('/registro');
+  const pathname = getPathname();
+  const isPublicRoute = pathname.startsWith('/login') || pathname.startsWith('/registro');
 
-  // --- LÓGICA DE REDIRECCIÓN Y CARGA SEGURA ---
+  // --- CORRECCIÓN: MOVER AMBOS useEffect AL NIVEL SUPERIOR ---
+  useEffect(() => {
+    // Esta lógica de redirección solo debe correr en el navegador
+    if (typeof window === 'undefined' || loading) {
+      return;
+    }
 
-  // 1. Renderizado de Carga Inicial
+    // Lógica 1: Si no hay usuario y NO estamos en una ruta pública, redirigir a /login
+    if (!user && !isPublicRoute) {
+      router.replace("/login"); 
+      return;
+    }
+
+    // Lógica 2: Si el usuario SÍ existe y está en una ruta pública (login/registro), redirigir a /
+    if (user && isPublicRoute) {
+      router.replace("/");
+      return;
+    }
+  }, [loading, user, isPublicRoute, router]); 
+  // -----------------------------------------------------------
+
+  // Renderizado de Carga Inicial
   if (loading) {
-    // Renderizado simple mientras Supabase carga la sesión inicial
     return <div className="flex items-center justify-center min-h-screen bg-gray-50">Cargando sesión...</div>;
   }
-  
-  // 2. Redirección y Acceso a Páginas Públicas
-  if (!user) {
-    if (isPublicRoute) {
-      // Permitir la carga del contenido de Login/Registro si no hay usuario
-      return <>{children}</>;
-    }
-    
-    // Si no hay usuario y no estamos en una ruta pública, redirigir
-    // Este useEffect se encargará de la redirección al login
-    useEffect(() => {
-        router.replace("/login");
-    }, [router]);
-    
-    // Mostrar un mensaje mientras el router redirige
-    return <div className="flex items-center justify-center min-h-screen bg-gray-50">Redirigiendo a Login...</div>;
-  }
-  
-  // 3. Renderizado de Aplicación Principal
-  // Si llegamos aquí, 'user' existe. Verificamos que el perfil también esté cargado.
+
+  // Comprobar el perfil si el usuario existe antes de renderizar el layout completo
   if (user && !profile) { 
-      // Retrasar la renderización del contenido completo hasta tener el perfil 
       return <div className="flex items-center justify-center min-h-screen bg-gray-50">Cargando datos de usuario...</div>;
   }
   
-  // Redirección de páginas públicas si ya está autenticado (corrección del login)
+  // Renderizado para Rutas Públicas (Login/Registro)
+  if (!user && isPublicRoute) {
+     return <>{children}</>;
+  }
+
+  // Mostrar un cargando/redirigiendo si el useEffect está a punto de actuar
+  if (!user && !isPublicRoute) {
+    return <div className="flex items-center justify-center min-h-screen bg-gray-50">Redirigiendo a Login...</div>;
+  }
+
+  // Redirección de páginas públicas si ya está autenticado (user existe y isPublicRoute es true)
   if (user && isPublicRoute) {
-    // Si el usuario está autenticado y en una página pública (login/registro), redirigir a inicio
-    useEffect(() => {
-        router.replace("/");
-    }, [router]);
     return <div className="flex items-center justify-center min-h-screen bg-gray-50">Acceso concedido, redirigiendo...</div>;
   }
   
-  // 4. Renderizado Final para Usuarios Autenticados y Cargados
+  // Renderizado Final para Usuarios Autenticados y Cargados (user y profile son válidos aquí)
   return (
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar />
