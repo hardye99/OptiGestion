@@ -11,64 +11,66 @@ interface AuthLayoutProps {
 }
 
 // Este componente aplica la lógica de redirección y la estructura visual
-// Este componente aplica la lógica de redirección y la estructura visual
 function AppStructure({ children }: AuthLayoutProps) {
-  // *** CAMBIO 1: Incluir 'profile' en la desestructuración de useAuth ***
+  // Ahora destructuramos todo el contexto de autenticación
   const { user, profile, loading } = useAuth();
   const router = useRouter();
 
   // Función auxiliar para obtener la ruta de forma segura en el servidor
   const getPathname = () => {
+    // Es seguro llamar a window.location.pathname aquí porque AppStructure es "use client"
     return typeof window !== 'undefined' ? window.location.pathname : '';
   };
   
   const isPublicRoute = getPathname().startsWith('/login') || getPathname().startsWith('/registro');
 
-  // Redirección simple: si no está cargando y no hay usuario, ir a login
-  useEffect(() => {
-    // La redirección solo ocurre en el navegador
-    if (typeof window !== 'undefined') {
-      if (!loading && !user && !isPublicRoute) {
-        router.replace("/login"); 
-      } else if (!loading && user && isPublicRoute) {
-        // Si el usuario está autenticado y en una página pública, redirige a '/'
-        router.replace("/");
-      }
-    }
-  }, [loading, user, router, isPublicRoute]);
+  // --- LÓGICA DE REDIRECCIÓN Y CARGA SEGURA ---
 
-  // Renderizado para SSR/Client
+  // 1. Renderizado de Carga Inicial
   if (loading) {
-    // Muestra pantalla de carga inicial de la sesión
+    // Renderizado simple mientras Supabase carga la sesión inicial
     return <div className="flex items-center justify-center min-h-screen bg-gray-50">Cargando sesión...</div>;
   }
   
-  // *** CAMBIO 2: Comprobar el perfil si el usuario existe ***
-  // Si el usuario está autenticado pero el perfil aún no se ha cargado, 
-  // mostramos una pantalla de carga para evitar que Sidebar (u otros) falle.
+  // 2. Redirección y Acceso a Páginas Públicas
+  if (!user) {
+    if (isPublicRoute) {
+      // Permitir la carga del contenido de Login/Registro si no hay usuario
+      return <>{children}</>;
+    }
+    
+    // Si no hay usuario y no estamos en una ruta pública, redirigir
+    // Este useEffect se encargará de la redirección al login
+    useEffect(() => {
+        router.replace("/login");
+    }, [router]);
+    
+    // Mostrar un mensaje mientras el router redirige
+    return <div className="flex items-center justify-center min-h-screen bg-gray-50">Redirigiendo a Login...</div>;
+  }
+  
+  // 3. Renderizado de Aplicación Principal
+  // Si llegamos aquí, 'user' existe. Verificamos que el perfil también esté cargado.
   if (user && !profile) { 
+      // Retrasar la renderización del contenido completo hasta tener el perfil 
       return <div className="flex items-center justify-center min-h-screen bg-gray-50">Cargando datos de usuario...</div>;
   }
-
-  // Si no hay usuario y estamos en una ruta pública, renderiza el contenido (Login/Registro)
-  if (!user && isPublicRoute) {
-     return <>{children}</>;
+  
+  // Redirección de páginas públicas si ya está autenticado (corrección del login)
+  if (user && isPublicRoute) {
+    // Si el usuario está autenticado y en una página pública (login/registro), redirigir a inicio
+    useEffect(() => {
+        router.replace("/");
+    }, [router]);
+    return <div className="flex items-center justify-center min-h-screen bg-gray-50">Acceso concedido, redirigiendo...</div>;
   }
-
-  // Si no hay usuario y NO estamos en una ruta pública (e.g., /_not-found, /), 
-  // mostramos un cargando mientras el useEffect hace la redirección a /login
-  if (!user && !isPublicRoute) {
-    return <div className="flex items-center justify-center min-h-screen bg-gray-50">Redirigiendo...</div>;
-  }
-
-  // Estructura de la aplicación para usuarios autenticados (user y profile son válidos aquí)
+  
+  // 4. Renderizado Final para Usuarios Autenticados y Cargados
   return (
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar />
       <main className="flex-1 p-8 overflow-y-auto">
-        <Suspense fallback={<div>Cargando contenido...</div>}>
-          {children}
-        </Suspense>
+        {children}
       </main>
     </div>
   );
