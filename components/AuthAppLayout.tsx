@@ -15,24 +15,40 @@ function AppStructure({ children }: AuthLayoutProps) {
   const { user, loading } = useAuth();
   const router = useRouter();
 
+  // Función auxiliar para obtener la ruta de forma segura en el servidor
+  const getPathname = () => {
+    return typeof window !== 'undefined' ? window.location.pathname : '';
+  };
+  
+  const isPublicRoute = getPathname().startsWith('/login') || getPathname().startsWith('/registro');
+
   // Redirección simple: si no está cargando y no hay usuario, ir a login
   useEffect(() => {
-    if (!loading && !user) {
-      // Usar replace para evitar volver a la página anterior después del login
-      router.replace("/login"); 
+    // La redirección solo ocurre en el navegador
+    if (typeof window !== 'undefined') {
+      if (!loading && !user && !isPublicRoute) {
+        router.replace("/login"); 
+      } else if (!loading && user && isPublicRoute) {
+        // Si el usuario está autenticado y en una página pública, redirige a '/'
+        router.replace("/");
+      }
     }
-  }, [loading, user, router]);
+  }, [loading, user, router, isPublicRoute]); // isPublicRoute es segura aquí porque se usa en el chequeo
 
-  // Si está cargando o no hay usuario autenticado, muestra solo el login o una pantalla de carga
-  if (loading || !user) {
-    // Si la ruta es /login, renderiza el contenido (para que el formulario aparezca)
-    // De lo contrario, muestra una pantalla de carga para evitar destellos
-    if (window.location.pathname.startsWith('/login') || window.location.pathname.startsWith('/registro')) {
-       return <>{children}</>;
-    }
-    
-    // El Sidebar no se renderiza hasta que el usuario es conocido
+  // Renderizado para SSR/Client
+  if (loading) {
     return <div className="flex items-center justify-center min-h-screen bg-gray-50">Cargando sesión...</div>;
+  }
+  
+  // Si no hay usuario y estamos en una ruta pública, renderiza el contenido (Login/Registro)
+  if (!user && isPublicRoute) {
+     return <>{children}</>;
+  }
+
+  // Si no hay usuario y NO estamos en una ruta pública (e.g., /_not-found, /), 
+  // mostramos un cargando mientras el useEffect hace la redirección a /login
+  if (!user && !isPublicRoute) {
+    return <div className="flex items-center justify-center min-h-screen bg-gray-50">Redirigiendo...</div>;
   }
 
   // Estructura de la aplicación para usuarios autenticados
