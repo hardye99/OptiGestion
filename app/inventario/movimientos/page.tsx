@@ -1,20 +1,13 @@
+// app/inventario/movimientos/page.tsx
+
 "use client";
 
 import { useState, useEffect } from "react";
 import { Plus, TrendingUp, TrendingDown, Package, Calendar, Filter, Search, X } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { MovimientoConProducto } from "@/lib/types";
-import { RoleGuard } from "@/components/RoleGuard";
 
 export default function HistorialMovimientosPage() {
-  return (
-    <RoleGuard allowedRoles={["desarrollador", "dueño"]}>
-      <MovimientosContent />
-    </RoleGuard>
-  );
-}
-
-function MovimientosContent() {
   const [filtroTipo, setFiltroTipo] = useState("todos");
   const [busqueda, setBusqueda] = useState("");
   const [movimientos, setMovimientos] = useState<MovimientoConProducto[]>([]);
@@ -61,10 +54,8 @@ function MovimientosContent() {
   const cargarEstadisticas = async () => {
     try {
       const hoy = new Date();
-      const año = hoy.getFullYear();
-      const mes = String(hoy.getMonth() + 1).padStart(2, '0');
-      const dia = String(hoy.getDate()).padStart(2, '0');
-      const inicioHoy = `${año}-${mes}-${dia}T00:00:00`;
+      hoy.setHours(0, 0, 0, 0);
+      const inicioHoy = hoy.toISOString();
 
       // Entradas de hoy
       const { data: entradas } = await supabase
@@ -139,16 +130,6 @@ function MovimientosContent() {
       }
 
       // Insertar movimiento - el trigger de Supabase actualizará el stock automáticamente
-      // Usar fecha y hora local sin conversión a UTC
-      const ahora = new Date();
-      const año = ahora.getFullYear();
-      const mes = String(ahora.getMonth() + 1).padStart(2, '0');
-      const dia = String(ahora.getDate()).padStart(2, '0');
-      const hora = String(ahora.getHours()).padStart(2, '0');
-      const minutos = String(ahora.getMinutes()).padStart(2, '0');
-      const segundos = String(ahora.getSeconds()).padStart(2, '0');
-      const fechaLocal = `${año}-${mes}-${dia}T${hora}:${minutos}:${segundos}`;
-
       const { error: errorMovimiento } = await supabase
         .from('movimientos_inventario')
         .insert({
@@ -156,7 +137,7 @@ function MovimientosContent() {
           tipo: nuevoMovimiento.tipo,
           cantidad: nuevoMovimiento.cantidad,
           motivo: nuevoMovimiento.motivo || null,
-          fecha: fechaLocal,
+          fecha: new Date().toISOString(),
           usuario: 'Sistema'
         });
 
@@ -249,7 +230,7 @@ function MovimientosContent() {
               placeholder="Buscar producto..."
               value={busqueda}
               onChange={(e) => setBusqueda(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              className="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none text-gray-900"
             />
           </div>
 
@@ -258,7 +239,7 @@ function MovimientosContent() {
             <select
               value={filtroTipo}
               onChange={(e) => setFiltroTipo(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none appearance-none bg-white"
+              className="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none appearance-none bg-white text-gray-900"
             >
               <option value="todos">Todos los tipos</option>
               <option value="entrada">Entradas</option>
@@ -271,7 +252,7 @@ function MovimientosContent() {
             <Calendar className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
             <input
               type="date"
-              className="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              className="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none text-gray-900"
             />
           </div>
         </div>
@@ -337,13 +318,7 @@ function MovimientosContent() {
                     </span>
                   </td>
                   <td className="px-6 py-4 text-gray-600">
-                    {(() => {
-                      // Extraer la fecha directamente del string ISO sin conversión UTC
-                      const fechaStr = mov.fecha.toString();
-                      const [fecha] = fechaStr.split('T');
-                      const [año, mes, dia] = fecha.split('-');
-                      return `${dia}/${mes}/${año}`;
-                    })()}
+                    {new Date(mov.fecha).toLocaleDateString('es-ES')}
                   </td>
                   <td className="px-6 py-4 text-gray-600">{mov.usuario || 'Sistema'}</td>
                   <td className="px-6 py-4">
@@ -401,7 +376,7 @@ function MovimientosContent() {
                 <select
                   value={nuevoMovimiento.producto_id}
                   onChange={(e) => setNuevoMovimiento({ ...nuevoMovimiento, producto_id: e.target.value })}
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none text-gray-900"
                 >
                   <option value="">Selecciona un producto</option>
                   {productos.map((producto) => (
@@ -459,7 +434,7 @@ function MovimientosContent() {
                   min="1"
                   value={nuevoMovimiento.cantidad}
                   onChange={(e) => setNuevoMovimiento({ ...nuevoMovimiento, cantidad: parseInt(e.target.value) || 0 })}
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none text-gray-900"
                   placeholder="Ingresa la cantidad"
                 />
               </div>
@@ -471,7 +446,7 @@ function MovimientosContent() {
                 <textarea
                   value={nuevoMovimiento.motivo}
                   onChange={(e) => setNuevoMovimiento({ ...nuevoMovimiento, motivo: e.target.value })}
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none text-gray-900"
                   rows={3}
                   placeholder="Descripción del movimiento..."
                 />
