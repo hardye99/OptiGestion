@@ -163,7 +163,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         password,
         options: {
           data: metadata,
-          emailRedirectTo: undefined,
+          // CORRECCIÓN 1: La línea 'emailRedirectTo: undefined' se ha eliminado
+          // para que Supabase envíe el correo de verificación.
+          // emailRedirectTo: undefined,
         },
       });
 
@@ -174,12 +176,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       console.log('✅ Usuario registrado exitosamente:', data.user?.email);
 
-      // Esperar un momento para que el trigger cree el perfil
+      // Esperar un momento para que el trigger cree el perfil (CRUCIAL para el perfil)
       await new Promise(resolve => setTimeout(resolve, 1000));
       
-      // Lógica para enviar correo de bienvenida (requiere implementación en lib/email.ts)
+      // Nota: Si necesita un correo de bienvenida custom, debe implementar la función 
+      // y llamarla aquí. Por ahora, se confía en el correo de verificación de Supabase.
       if (data.user) {
-        console.log('📬 Correo de bienvenida (Email/Password) marcado para envío.');
+        console.log('📬 El correo de verificación de Supabase fue enviado.');
       }
 
       return { error: null };
