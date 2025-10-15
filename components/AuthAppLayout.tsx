@@ -44,8 +44,6 @@ function AppStructure({ children }: AuthLayoutProps) {
   // ---------------------------------------------------------------------------------
 
   // --- RENDERING PROTECTION ---
-
-  // 1. Loading Protection (Espera el estado inicial Y la carga del perfil)
   if (loading || (user && !profile)) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-50">
@@ -54,12 +52,10 @@ function AppStructure({ children }: AuthLayoutProps) {
     );
   }
   
-  // 2. Rutas Públicas (Login/Registro)
   if (!user && isPublicRoute) {
      return <>{children}</>;
   }
   
-  // 3. Mostrar pantalla de transición si la redirección ya fue iniciada
   if (!user && !isPublicRoute) {
     return <div className="flex items-center justify-center min-h-screen bg-gray-50">Redirigiendo a Login...</div>;
   }
@@ -68,13 +64,15 @@ function AppStructure({ children }: AuthLayoutProps) {
     return <div className="flex items-center justify-center min-h-screen bg-gray-50">Acceso concedido, redirigiendo...</div>;
   }
   
-  // 4. Renderizado Final (Usuario y Perfil garantizados)
+  // 4. Renderizado Final para Usuarios Autenticados (Sidebar siempre visible)
   return (
-    // FIX MOBILE LAYOUT: Ocultar el sidebar en móvil y ajustar padding de main
+    // FIX MOBILE LAYOUT: Se elimina la clase 'hidden' y el Sidebar siempre se renderiza
     <div className="flex min-h-screen bg-gray-50">
-      <div className="hidden lg:block"> {/* Sidebar solo visible en pantallas grandes (lg) */}
-        <Sidebar />
-      </div>
+      
+      {/* El Sidebar estará visible por defecto. En producción, se debería usar un menú hamburguesa */}
+      {/* Se mantiene la clase w-64/w-20 de Sidebar para la disposición general */}
+      <Sidebar /> 
+      
       <main className="flex-1 p-4 lg:p-8 overflow-y-auto"> {/* p-4 en móvil, p-8 en desktop */}
         <Suspense fallback={<div>Cargando contenido...</div>}>
           {children}
