@@ -10,53 +10,26 @@ import {
   Calendar,
   Users,
   LogIn,
-  LogOut,
   ChevronLeft,
   ChevronRight,
   Home,
-  User,
 } from "lucide-react";
-import { useAuth } from "@/lib/auth-context";
-import { UserRole } from "@/lib/types";
 
-// Configuración de menús con roles requeridos
 const menuItems = [
-  {
-    href: "/",
-    icon: Home,
-    label: "Principal",
-    roles: ["desarrollador", "dueño", "empleado"] as UserRole[]
-  },
-  {
-    href: "/inventario",
-    icon: Package,
-    label: "Inventario",
-    roles: ["desarrollador", "dueño", "empleado"] as UserRole[]
-  },
-  {
-    href: "/productos",
-    icon: ShoppingCart,
-    label: "Productos",
-    roles: ["desarrollador", "dueño", "empleado"] as UserRole[]
-  },
-  {
-    href: "/citas",
-    icon: Calendar,
-    label: "Citas",
-    roles: ["desarrollador", "dueño", "empleado"] as UserRole[]
-  },
-  {
-    href: "/clientes",
-    icon: Users,
-    label: "Clientes",
-    roles: ["desarrollador", "dueño", "empleado"] as UserRole[]
-  },
+  { href: "/", icon: Home, label: "Principal" },
+  { href: "/inventario", icon: Package, label: "Inventario" },
+  { href: "/productos", icon: ShoppingCart, label: "Productos" },
+  { href: "/citas", icon: Calendar, label: "Citas" },
+  { href: "/clientes", icon: Users, label: "Clientes" },
+];
+
+const menuItemsSecundarios = [
+  { href: "/login", icon: LogIn, label: "Login" },
 ];
 
 export function Sidebar() {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const pathname = usePathname();
-  const { user, profile, signOut } = useAuth();
 
   const isActive = (path: string) => {
     if (path === "/") return pathname === "/";
@@ -95,108 +68,63 @@ export function Sidebar() {
               Menú Principal
             </p>
           )}
-          {menuItems
-            .filter((item) => {
-              // Filtrar items según el rol del usuario
-              if (!profile) {
-                return false; // Simplemente no mostrar el menú hasta que cargue el perfil
-              }
-              return item.roles.includes(profile.role);
-            })
-            .map((item) => {
-              const Icon = item.icon;
-              const active = isActive(item.href);
+          {menuItems.map((item) => {
+            const Icon = item.icon;
+            const active = isActive(item.href);
 
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={`flex items-center gap-3 px-3 py-3 rounded-lg transition-all duration-200 ${
-                    active
-                      ? "bg-blue-600 text-white shadow-lg scale-105"
-                      : "text-blue-100 hover:bg-blue-700 hover:text-white hover:scale-105"
-                  }`}
-                >
-                  <Icon className={`h-5 w-5 ${active ? "text-blue-200" : ""} flex-shrink-0`} />
-                  {!isCollapsed && (
-                    <span className="font-medium">{item.label}</span>
-                  )}
-                  {active && !isCollapsed && (
-                    <div className="ml-auto w-2 h-2 bg-blue-200 rounded-full"></div>
-                  )}
-                </Link>
-              );
-            })}
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`flex items-center gap-3 px-3 py-3 rounded-lg transition-all duration-200 ${
+                  active
+                    ? "bg-blue-600 text-white shadow-lg scale-105"
+                    : "text-blue-100 hover:bg-blue-700 hover:text-white hover:scale-105"
+                }`}
+              >
+                <Icon className={`h-5 w-5 ${active ? "text-blue-200" : ""} flex-shrink-0`} />
+                {!isCollapsed && (
+                  <span className="font-medium">{item.label}</span>
+                )}
+                {active && !isCollapsed && (
+                  <div className="ml-auto w-2 h-2 bg-blue-200 rounded-full"></div>
+                )}
+              </Link>
+            );
+          })}
         </div>
 
         {/* Separador */}
         <div className="border-t border-blue-700/50 my-4"></div>
 
-        {/* Menú secundario - Usuario */}
+        {/* Menú secundario */}
         <div>
           {!isCollapsed && (
             <p className="text-xs font-semibold text-blue-300 uppercase tracking-wider mb-3 px-3">
               Sesión
             </p>
           )}
+          {menuItemsSecundarios.map((item) => {
+            const Icon = item.icon;
+            const active = isActive(item.href);
 
-          {user ? (
-            <>
-              {/* Información del usuario */}
-              {!isCollapsed && (
-                <div className="px-3 py-2 mb-2">
-                  <div className="bg-blue-700/30 rounded-lg p-3 backdrop-blur-sm">
-                    <div className="flex items-center gap-2 text-blue-100 mb-2">
-                      <User className="h-4 w-4" />
-                      <div className="overflow-hidden flex-1">
-                        <p className="text-xs font-medium truncate">
-                          {profile?.nombre || user.email}
-                        </p>
-                      </div>
-                    </div>
-                    {profile && (
-                      <div className="flex items-center gap-2">
-                        <div className={`px-2 py-0.5 rounded text-xs font-semibold ${
-                          profile.role === 'desarrollador'
-                            ? 'bg-purple-500 text-white'
-                            : profile.role === 'dueño'
-                            ? 'bg-yellow-500 text-gray-900'
-                            : 'bg-blue-500 text-white'
-                        }`}>
-                          {profile.role.charAt(0).toUpperCase() + profile.role.slice(1)}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* Botón de cerrar sesión */}
-              <button
-                onClick={signOut}
-                className="w-full flex items-center gap-3 px-3 py-3 rounded-lg transition-all duration-200 text-blue-100 hover:bg-red-600 hover:text-white"
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`flex items-center gap-3 px-3 py-3 rounded-lg transition-all duration-200 ${
+                  active
+                    ? "bg-blue-600 text-white shadow-lg"
+                    : "text-blue-100 hover:bg-blue-700 hover:text-white"
+                }`}
               >
-                <LogOut className="h-5 w-5 flex-shrink-0" />
+                <Icon className="h-5 w-5 flex-shrink-0" />
                 {!isCollapsed && (
-                  <span className="font-medium">Cerrar Sesión</span>
+                  <span className="font-medium">{item.label}</span>
                 )}
-              </button>
-            </>
-          ) : (
-            <Link
-              href="/login"
-              className={`flex items-center gap-3 px-3 py-3 rounded-lg transition-all duration-200 ${
-                isActive("/login")
-                  ? "bg-blue-600 text-white shadow-lg"
-                  : "text-blue-100 hover:bg-blue-700 hover:text-white"
-              }`}
-            >
-              <LogIn className="h-5 w-5 flex-shrink-0" />
-              {!isCollapsed && (
-                <span className="font-medium">Iniciar Sesión</span>
-              )}
-            </Link>
-          )}
+              </Link>
+            );
+          })}
         </div>
       </nav>
 
