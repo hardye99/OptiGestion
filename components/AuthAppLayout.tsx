@@ -1,10 +1,11 @@
+// components/AuthAppLayout.tsx
+
 "use client";
 
-import { ReactNode, Suspense } from "react";
+import { ReactNode, Suspense, useEffect } from "react";
 import { Sidebar } from "@/components/SideBar";
-import { AuthProvider, useAuth } from "@/lib/auth-context"; // Importa el Provider y el Hook
+import { AuthProvider, useAuth } from "@/lib/AuthContext";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
 
 interface AuthLayoutProps {
   children: ReactNode;
@@ -25,7 +26,6 @@ function AppStructure({ children }: AuthLayoutProps) {
 
   // --- LÓGICA DE REDIRECCIÓN EN useEffect (NIVEL SUPERIOR) ---
   useEffect(() => {
-    // Si estamos en el servidor o cargando, ignorar la redirección
     if (typeof window === 'undefined' || loading) {
       return;
     }
@@ -46,28 +46,41 @@ function AppStructure({ children }: AuthLayoutProps) {
 
   // --- RENDERING PROTECTION ---
 
-  // 1. Si está cargando O el usuario está autenticado pero el perfil NO (estado crítico)
+  // 1. Renderizado de Carga Inicial (o si el usuario está a medio cargar)
+  // Esperar a que 'loading' sea falso Y que si hay 'user', también haya 'profile'.
   if (loading || (user && !profile)) {
       return <div className="flex items-center justify-center min-h-screen bg-gray-50">Cargando datos de la aplicación...</div>;
   }
   
-  // 2. Si no hay usuario y el useEffect no ha redirigido (sólo debería ser en /login o /registro)
-  if (!user) {
+  // 2. Rutas Públicas (Login/Registro)
+  // Si no hay usuario y estamos en una ruta pública (el useEffect no redirige)
+  if (!user && isPublicRoute) {
      return <>{children}</>;
   }
   
-  // 3. Renderizado Final para Usuarios Autenticados y Cargados (user y profile garantizados)
-  // Nota: Si el usuario ya está autenticado pero recarga en /login, la lógica del useEffect
-  // ya inició la redirección a "/", por lo que este bloque no se renderiza hasta el siguiente ciclo.
+  // 3. Mostrar pantalla de transición si la redirección ya fue iniciada
+  // Si el useEffect inicia una redirección (ej. de / a /login, o de /login a /)
+  if (!user && !isPublicRoute) {
+    return <div className="flex items-center justify-center min-h-screen bg-gray-50">Redirigiendo a Login...</div>;
+  }
+
+  if (user && isPublicRoute) {
+    return <div className="flex items-center justify-center min-h-screen bg-gray-50">Acceso concedido, redirigiendo...</div>;
+  }
+  
+  // 4. Renderizado Final para Usuarios Autenticados y Cargados (user y profile garantizados)
   return (
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar />
       <main className="flex-1 p-8 overflow-y-auto">
-        {children}
+        <Suspense fallback={<div>Cargando contenido...</div>}>
+          {children}
+        </Suspense>
       </main>
     </div>
   );
 }
+
 // Este es el componente que se usa en app/layout.tsx
 export function AuthAppLayout({ children }: AuthLayoutProps) {
   return (
