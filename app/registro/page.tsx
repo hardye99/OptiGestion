@@ -58,7 +58,6 @@ export default function RegistroPage() {
         setError(signUpError);
       } else {
         // Registro exitoso, Supabase enviará el correo de verificación.
-        // Redirigimos al usuario a una página de confirmación.
         alert("¡Registro exitoso! Por favor revisa tu correo electrónico para verificar tu cuenta.");
         router.push("/login"); 
       }
@@ -72,7 +71,7 @@ export default function RegistroPage() {
 
   return (
     <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center">
-      {/* Fondo decorativo heredado del Login */}
+      {/* Fondo decorativo (Heredado de login/page.tsx) */}
       <div className="fixed inset-0 -z-10 pointer-events-none">
         <div className="absolute -top-40 -right-40 w-80 h-80 bg-blue-200 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-blob"></div>
         <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-indigo-200 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-blob animation-delay-2000"></div>
@@ -162,7 +161,7 @@ export default function RegistroPage() {
               <div className="relative">
                 <Lock className="absolute left-3 top-3.5 h-5 w-5 text-gray-400" />
                 <input
-                  type={showPassword ? "text" : "password"} // Tipo corregido para seguridad
+                  type={showPassword ? "text" : "password"}
                   name="password"
                   value={formData.password}
                   onChange={handleChange}
@@ -229,7 +228,7 @@ export default function RegistroPage() {
         </p>
       </div>
 
-      {/* Estilos del fondo animado */}
+      {/* Estilos del fondo animado (Heredados de login/page.tsx) */}
       <style jsx>{`
         @keyframes blob {
           0% { transform: translate(0px, 0px) scale(1); }
