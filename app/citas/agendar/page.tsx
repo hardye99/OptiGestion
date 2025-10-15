@@ -1,3 +1,5 @@
+// app/citas/agendar/page.tsx
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -93,7 +95,7 @@ export default function AgendarCitaPage() {
               required
               value={formData.cliente_id}
               onChange={(e) => setFormData({ ...formData, cliente_id: e.target.value })}
-              className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none text-gray-900"
             >
               <option value="">Seleccionar cliente</option>
               {clientes.map(cliente => (
@@ -116,7 +118,7 @@ export default function AgendarCitaPage() {
                 required
                 value={formData.fecha}
                 onChange={(e) => setFormData({ ...formData, fecha: e.target.value })}
-                className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none text-gray-900"
               />
             </div>
 
@@ -130,7 +132,7 @@ export default function AgendarCitaPage() {
                 required
                 value={formData.hora}
                 onChange={(e) => setFormData({ ...formData, hora: e.target.value })}
-                className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none text-gray-900"
               />
             </div>
           </div>
@@ -144,7 +146,7 @@ export default function AgendarCitaPage() {
               type="text"
               value={formData.motivo}
               onChange={(e) => setFormData({ ...formData, motivo: e.target.value })}
-              className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none text-gray-900"
               placeholder="Ej: Examen de la vista, Entrega de lentes, etc."
             />
           </div>
@@ -158,7 +160,7 @@ export default function AgendarCitaPage() {
             <textarea
               value={formData.observaciones}
               onChange={(e) => setFormData({ ...formData, observaciones: e.target.value })}
-              className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none resize-none"
+              className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none resize-none text-gray-900"
               rows={4}
               placeholder="Notas adicionales sobre la cita..."
             />
