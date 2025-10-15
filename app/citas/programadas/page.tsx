@@ -1,3 +1,5 @@
+// app/citas/programadas/page.tsx
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -102,14 +104,14 @@ export default function CitasProgramadasPage() {
               placeholder="Buscar por cliente..."
               value={busqueda}
               onChange={(e) => setBusqueda(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              className="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none text-gray-900"
             />
           </div>
 
           <select
             value={filtroEstado}
             onChange={(e) => setFiltroEstado(e.target.value)}
-            className="px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+            className="px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none text-gray-900"
           >
             <option value="todas">Todas las citas</option>
             <option value="pendiente">Pendientes</option>
