@@ -1,10 +1,8 @@
-// app/clientes/page.tsx
-
 "use client";
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Search, Plus, Edit, Trash2, Eye, Phone, Mail, User } from "lucide-react";
+import { Search, Plus, Edit, Trash2, Eye, Phone, Mail, User, FileText } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { Cliente } from "@/lib/types";
 import { toast } from "sonner";
@@ -149,7 +147,7 @@ export default function ClientesPage() {
             placeholder="Buscar cliente por nombre o email..."
             value={busqueda}
             onChange={(e) => setBusqueda(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none text-gray-900"
+            className="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
           />
         </div>
       </div>
@@ -212,12 +210,21 @@ export default function ClientesPage() {
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center justify-end gap-2">
-                        <button className="p-2 hover:bg-blue-50 rounded-lg transition" title="Ver detalles">
-                          <Eye className="h-5 w-5 text-blue-600" />
-                        </button>
-                        <button className="p-2 hover:bg-green-50 rounded-lg transition" title="Editar">
-                          <Edit className="h-5 w-5 text-green-600" />
-                        </button>
+                        <Link href={`/clientes/${cliente.id}`}>
+                          <button className="p-2 hover:bg-blue-50 rounded-lg transition" title="Ver detalles">
+                            <Eye className="h-5 w-5 text-blue-600" />
+                          </button>
+                        </Link>
+                        <Link href={`/recetas/nueva?cliente=${cliente.id}`}>
+                          <button className="p-2 hover:bg-purple-50 rounded-lg transition" title="Crear receta">
+                            <FileText className="h-5 w-5 text-purple-600" />
+                          </button>
+                        </Link>
+                        <Link href={`/clientes/${cliente.id}/editar`}>
+                          <button className="p-2 hover:bg-green-50 rounded-lg transition" title="Editar">
+                            <Edit className="h-5 w-5 text-green-600" />
+                          </button>
+                        </Link>
                         <button
                           onClick={() => eliminarCliente(cliente.id)}
                           className="p-2 hover:bg-red-50 rounded-lg transition"
