@@ -1,10 +1,12 @@
+// app/inventario/page.tsx
+
 "use client";
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Package, TrendingUp, TrendingDown, AlertTriangle, ArrowRight, BarChart3, Activity } from "lucide-react";
 import { supabase } from "@/lib/supabase";
-import { MovimientoInventario, ProductoStockBajo } from "@/lib/types";
+import { ProductoStockBajo } from "@/lib/types";
 
 export default function InventarioPage() {
   const [periodo, setPeriodo] = useState("mes");
@@ -17,7 +19,6 @@ export default function InventarioPage() {
   });
   const [movimientosRecientes, setMovimientosRecientes] = useState<any[]>([]);
   const [alertasStock, setAlertasStock] = useState<ProductoStockBajo[]>([]);
-  const [movimientosSemana, setMovimientosSemana] = useState<number[]>([0, 0, 0, 0, 0, 0, 0]);
   const [entradasSemana, setEntradasSemana] = useState<number[]>([0, 0, 0, 0, 0, 0, 0]);
   const [salidasSemana, setSalidasSemana] = useState<number[]>([0, 0, 0, 0, 0, 0, 0]);
   const [estadisticasPrevias, setEstadisticasPrevias] = useState({
@@ -203,7 +204,7 @@ export default function InventarioPage() {
           <select
             value={periodo}
             onChange={(e) => setPeriodo(e.target.value)}
-            className="px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+            className="px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none text-gray-900"
           >
             <option value="dia">Hoy</option>
             <option value="semana">Esta Semana</option>
@@ -472,7 +473,7 @@ export default function InventarioPage() {
                           ...cantidadesOrden,
                           [alerta.id]: parseInt(e.target.value) || 0
                         })}
-                        className="w-32 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-red-500 focus:outline-none"
+                        className="w-32 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-red-500 focus:outline-none text-gray-900"
                       />
                       <span className="text-sm text-gray-500">unidades</span>
                     </div>
