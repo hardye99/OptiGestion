@@ -51,10 +51,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     console.log('🚀 AuthProvider: Iniciando useEffect');
 
-    // Variables que necesitan 'let' o pueden ser null
     let refreshInterval: NodeJS.Timeout | null = null;
-    let handleVisibilityChange: (() => void) | null = null;
-
+    
     // Obtener sesión inicial
     supabase.auth.getSession().then(async ({ data: { session }, error }) => {
       console.log('📡 getSession resultado:', {
@@ -79,9 +77,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setLoading(false);
     });
 
-    // Escuchar cambios de autenticación. subscription es ahora una const en este scope.
+    // Escuchar cambios de autenticación
     const {
-      data: { subscription }, // <-- CORRECCIÓN: Declaración con const
+      data: { subscription },
     } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
@@ -95,7 +93,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setLoading(false);
     });
 
-    // === Lógica Específica del Navegador (Protegida) ===
+    // === Lógica Específica del Navegador (Corregida: Sin window.location.reload) ===
     if (typeof window !== 'undefined') {
       // Refrescar sesión cada 50 minutos
       refreshInterval = setInterval(async () => {
@@ -104,32 +102,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           console.log('✅ Sesión refrescada automáticamente');
         }
       }, 50 * 60 * 1000);
-
-      // Recargar página cuando vuelves a la pestaña (solución simple y efectiva)
-      handleVisibilityChange = () => {
-        if (!document.hidden) {
-          console.log('🔄 Volviste a la pestaña, recargando página...');
-          window.location.reload();
-        }
-      };
-
-      document.addEventListener('visibilitychange', handleVisibilityChange);
     }
-    // ===============================================
-
+    // ==============================================================================
+    
     return () => {
-      // Cleanup de la suscripción (es const y existe)
       subscription.unsubscribe();
-
       if (refreshInterval) {
         clearInterval(refreshInterval);
       }
-      if (handleVisibilityChange) {
-        document.removeEventListener('visibilitychange', handleVisibilityChange);
-      }
     };
   }, []);
-  
+
   const signIn = async (email: string, password: string) => {
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
@@ -149,7 +132,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         });
       }
 
-      // No hacemos router.push aquí, dejamos que el middleware maneje la redirección
       return { error: null };
     } catch (error) {
       console.error('❌ Error inesperado al iniciar sesión:', error);
@@ -205,7 +187,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return roles.includes(profile.role);
     }
 
-    return profile.role === roles;
+    return (profile as any).role === roles; 
   };
 
   const value = {
