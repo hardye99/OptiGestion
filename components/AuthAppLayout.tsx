@@ -2,7 +2,7 @@
 
 import { ReactNode, Suspense, useEffect } from "react";
 import { Sidebar } from "@/components/SideBar";
-import { AuthProvider, useAuth } from "@/lib/AuthContext";
+import { AuthProvider, useAuth } from "@/lib/auth-context";
 import { useRouter } from "next/navigation";
 import { MobileMenu } from "./MobileMenu";
 
