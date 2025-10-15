@@ -23,9 +23,8 @@ function AppStructure({ children }: AuthLayoutProps) {
   const pathname = getPathname();
   const isPublicRoute = pathname.startsWith('/login') || pathname.startsWith('/registro');
 
-  // --- CORRECCIÓN: MOVER AMBOS useEffect AL NIVEL SUPERIOR ---
+  // --- LÓGICA DE REDIRECCIÓN EN useEffect (NIVEL SUPERIOR) ---
   useEffect(() => {
-    // Esta lógica de redirección solo debe correr en el navegador
     if (typeof window === 'undefined' || loading) {
       return;
     }
@@ -42,34 +41,40 @@ function AppStructure({ children }: AuthLayoutProps) {
       return;
     }
   }, [loading, user, isPublicRoute, router]); 
-  // -----------------------------------------------------------
+  // -------------------------------------------------------------
 
   // Renderizado de Carga Inicial
   if (loading) {
     return <div className="flex items-center justify-center min-h-screen bg-gray-50">Cargando sesión...</div>;
-  }
-
-  // Comprobar el perfil si el usuario existe antes de renderizar el layout completo
-  if (user && !profile) { 
-      return <div className="flex items-center justify-center min-h-screen bg-gray-50">Cargando datos de usuario...</div>;
   }
   
   // Renderizado para Rutas Públicas (Login/Registro)
   if (!user && isPublicRoute) {
      return <>{children}</>;
   }
-
-  // Mostrar un cargando/redirigiendo si el useEffect está a punto de actuar
+  
+  // Renderizado Condicional para Rutas de Aplicación Protegidas
+  
+  // Caso 1: Usuario NO autenticado, pero NO estamos en una ruta pública.
+  // Esto significa que el useEffect está intentando redirigir.
   if (!user && !isPublicRoute) {
     return <div className="flex items-center justify-center min-h-screen bg-gray-50">Redirigiendo a Login...</div>;
   }
 
-  // Redirección de páginas públicas si ya está autenticado (user existe y isPublicRoute es true)
+  // Caso 2: Usuario autenticado, pero el perfil aún no se ha cargado.
+  // Evitamos que el Sidebar o las páginas fallen por falta de datos.
+  if (user && !profile) { 
+      return <div className="flex items-center justify-center min-h-screen bg-gray-50">Cargando datos de usuario...</div>;
+  }
+
+  // Caso 3: Usuario autenticado Y en ruta pública.
+  // El useEffect ya inició la redirección a "/", mostramos un mensaje temporal.
   if (user && isPublicRoute) {
     return <div className="flex items-center justify-center min-h-screen bg-gray-50">Acceso concedido, redirigiendo...</div>;
   }
   
-  // Renderizado Final para Usuarios Autenticados y Cargados (user y profile son válidos aquí)
+  // Caso 4: Renderizado Final (Usuario y Perfil cargados, en ruta privada)
+  // Aquí sabemos que user y profile existen.
   return (
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar />
