@@ -37,6 +37,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (error) {
         console.error('Error al obtener perfil:', error);
+        setProfile(null); 
+        return;
+      }
+      
+      // Si no hay datos (perfil no encontrado), establece explícitamente a null
+      if (!data) {
         setProfile(null);
         return;
       }
@@ -66,15 +72,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (session?.user) {
         console.log('👤 Usuario encontrado, cargando perfil...');
+        // *** CAMBIO CLAVE: Esperar a que el perfil termine de cargar ***
         await fetchProfile(session.user.id);
       } else {
         console.log('❌ No hay sesión de usuario');
+        setProfile(null); // Asegurar que el perfil es nulo si no hay sesión
       }
 
-      setLoading(false);
+      // *** CAMBIO CLAVE: Mover setLoading(false) aquí ***
+      setLoading(false); 
     }).catch((err) => {
       console.error('❌ Error al obtener sesión:', err);
       setLoading(false);
+      setProfile(null);
     });
 
     // Escuchar cambios de autenticación
@@ -95,7 +105,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // === Lógica Específica del Navegador (Refresco de sesión) ===
     if (typeof window !== 'undefined') {
-      // Refrescar sesión cada 50 minutos
       refreshInterval = setInterval(async () => {
         const { error } = await supabase.auth.refreshSession();
         if (!error) {
@@ -113,7 +122,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  // ********* DEFINICIONES DE MÉTODOS DE AUTENTICACIÓN (Una sola vez) *********
+  // ********* DEFINICIONES DE MÉTODOS DE AUTENTICACIÓN *********
 
   const signIn = async (email: string, password: string) => {
     try {
@@ -170,10 +179,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       // Lógica para enviar correo de bienvenida (requiere implementación en lib/email.ts)
       if (data.user) {
-        // await enviarEmailBienvenida({ 
-        //     to: data.user.email,
-        //     nombre: metadata?.nombre || 'Nuevo Usuario',
-        // });
         console.log('📬 Correo de bienvenida (Email/Password) marcado para envío.');
       }
 
