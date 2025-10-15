@@ -26,6 +26,53 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
+  const signUp = async (
+    email: string,
+    password: string,
+    metadata?: { nombre?: string; empresa?: string }
+  ) => {
+    try {
+      console.log('🔄 Intentando registrar usuario:', { email, metadata });
+
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: metadata,
+          emailRedirectTo: undefined,
+        },
+      });
+
+      if (error) {
+        console.error('❌ Error al registrar usuario:', error);
+        return { error: error.message };
+      }
+
+      console.log('✅ Usuario registrado exitosamente:', data.user?.email);
+
+      // Esperar un momento para que el trigger cree el perfil
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // *** INICIO DE LA LÓGICA DE ENVÍO DE CORREO ***
+      // Enviar correo solo si el registro fue exitoso
+      if (data.user) {
+        // Asumiendo que enviarEmailBienvenida existe y toma el nombre de metadata
+        // Nota: Debe crear esta función en lib/email.ts
+        // await enviarEmailBienvenida({ 
+        //     to: data.user.email,
+        //     nombre: metadata?.nombre || 'Nuevo Usuario',
+        // });
+        console.log('📬 Correo de bienvenida (Email/Password) marcado para envío.');
+      }
+      // *** FIN DE LA LÓGICA DE ENVÍO DE CORREO ***
+
+      return { error: null };
+    } catch (error) {
+      console.error('❌ Error inesperado al registrar:', error);
+      return { error: "Error al crear la cuenta" };
+    }
+  };
+
   // Función para obtener el perfil del usuario
   const fetchProfile = async (userId: string) => {
     try {
