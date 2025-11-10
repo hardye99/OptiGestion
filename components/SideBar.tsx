@@ -8,6 +8,7 @@ import {
   Package,
   ShoppingCart,
   Calendar,
+  ShoppingBag,
   Users,
   LogIn,
   LogOut,
@@ -43,6 +44,12 @@ const menuItems = [
     href: "/citas",
     icon: Calendar,
     label: "Citas",
+    roles: ["desarrollador", "dueño", "empleado"] as UserRole[]
+  },
+  {
+    href: "/ventas/nueva",
+    icon: ShoppingBag,
+    label: "Nueva Venta",
     roles: ["desarrollador", "dueño", "empleado"] as UserRole[]
   },
   {
