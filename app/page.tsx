@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Eye, Sparkles, Users, Calendar, Package, TrendingUp, BarChart3, ShoppingCart } from "lucide-react";
+import { Eye, Sparkles, Users, Calendar, Package, TrendingUp, BarChart3, ShoppingCart, ShoppingBag } from "lucide-react";
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
@@ -175,6 +175,14 @@ export default function HomePage() {
               <ShoppingCart className="h-8 w-8 mb-3" />
               <h3 className="text-xl font-bold mb-2">Productos</h3>
               <p className="text-green-100 text-sm">Catálogo de productos</p>
+            </div>
+          </Link>
+          
+          <Link href="/ventas/nueva">
+            <div className="bg-gradient-to-br from-red-500 to-red-600 text-white rounded-xl p-6 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 cursor-pointer">
+              <ShoppingBag className="h-8 w-8 mb-3" />
+              <h3 className="text-xl font-bold mb-2">Registrar Venta</h3>
+              <p className="text-red-100 text-sm">Terminal Punto de Venta</p>
             </div>
           </Link>
 
