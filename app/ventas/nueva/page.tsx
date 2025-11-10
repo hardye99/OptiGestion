@@ -6,7 +6,7 @@ import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { Cliente, ProductoConCategoria } from "@/lib/types"; // Importar tipos necesarios
 import { toast } from "sonner";
-import { useAuth } from "@/lib/AuthContext"; // Para obtener el usuario que realiza la venta
+import { useAuth } from "@/lib/auth-context"; // Para obtener el usuario que realiza la venta
 
 // Definición local para el carrito de compras
 interface CartItem {
@@ -361,4 +361,5 @@ export default function NuevaVentaPage() {
       </div>
     </div>
   );
+
 }
