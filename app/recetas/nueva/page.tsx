@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter, useSearchParams } from "next/navigation"; // useSearchParams para pre-seleccionar cliente si viene de la URL
+import { useRouter, useSearchParams } from "next/navigation";
 import { Save, ArrowLeft, User, FileText, Glasses } from "lucide-react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
@@ -11,15 +11,14 @@ import { toast } from "sonner";
 export default function NuevaRecetaPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const clienteIdParam = searchParams.get('cliente_id'); // Permitir pre-carga desde URL
+  const clienteIdParam = searchParams.get('cliente_id');
 
   const [loading, setLoading] = useState(false);
   const [clientes, setClientes] = useState<Cliente[]>([]);
   
-  // Estado del formulario
   const [formData, setFormData] = useState({
     cliente_id: clienteIdParam || "",
-    fecha: new Date().toISOString().split('T')[0], // Fecha de hoy
+    fecha: new Date().toISOString().split('T')[0],
     od_esfera: "",
     od_cilindro: "",
     od_eje: "",
@@ -36,9 +35,10 @@ export default function NuevaRecetaPage() {
 
   const cargarClientes = async () => {
     try {
+      // CORRECCIÓN: Seleccionar '*' para coincidir con la interfaz 'Cliente' completa
       const { data, error } = await supabase
         .from('clientes')
-        .select('id, nombre, apellido, email')
+        .select('*') 
         .order('nombre');
       
       if (error) throw error;
@@ -67,7 +67,6 @@ export default function NuevaRecetaPage() {
     setLoading(true);
 
     try {
-      // Preparar datos para inserción (Convertir strings vacíos a null o números)
       const recetaData = {
         cliente_id: formData.cliente_id,
         fecha: formData.fecha,
@@ -88,7 +87,7 @@ export default function NuevaRecetaPage() {
       if (error) throw error;
 
       toast.success('Receta guardada exitosamente');
-      router.push('/recetas'); // O redirigir al detalle del cliente
+      router.push('/recetas'); 
     } catch (error: any) {
       console.error('Error al guardar receta:', error);
       toast.error(error.message || 'Error al guardar la receta');
@@ -99,7 +98,6 @@ export default function NuevaRecetaPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-800">Nueva Receta Oftalmológica</h1>
@@ -115,7 +113,6 @@ export default function NuevaRecetaPage() {
 
       <form onSubmit={handleSubmit} className="bg-white shadow-md rounded-xl p-8">
         
-        {/* Selección de Cliente */}
         <div className="mb-8">
           <label className="block text-gray-700 font-medium mb-2 flex items-center gap-2">
             <User className="h-5 w-5 text-blue-600" />
@@ -137,7 +134,6 @@ export default function NuevaRecetaPage() {
           </select>
         </div>
 
-        {/* Datos de Graduación */}
         <div className="mb-8">
           <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
             <Glasses className="h-5 w-5 text-blue-600" />
@@ -235,7 +231,6 @@ export default function NuevaRecetaPage() {
           </div>
         </div>
 
-        {/* Otros datos */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
           <div>
             <label className="block text-gray-700 font-medium mb-2">Distancia Pupilar (DP)</label>
