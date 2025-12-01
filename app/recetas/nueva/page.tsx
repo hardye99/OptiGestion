@@ -1,9 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation"; // useSearchParams para pre-seleccionar cliente si viene de la URL
+import { Save, ArrowLeft, User, FileText, Glasses } from "lucide-react";
 import Link from "next/link";
-import { ArrowLeft, Eye, Save, User } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { Cliente } from "@/lib/types";
 import { toast } from "sonner";
@@ -11,333 +11,290 @@ import { toast } from "sonner";
 export default function NuevaRecetaPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const clienteId = searchParams.get("cliente");
+  const clienteIdParam = searchParams.get('cliente_id'); // Permitir pre-carga desde URL
 
   const [loading, setLoading] = useState(false);
-  const [cliente, setCliente] = useState<Cliente | null>(null);
+  const [clientes, setClientes] = useState<Cliente[]>([]);
+  
+  // Estado del formulario
   const [formData, setFormData] = useState({
-    cliente_id: clienteId || "",
-    fecha: new Date().toISOString().split('T')[0],
-    ojo_derecho_esfera: "",
-    ojo_derecho_cilindro: "",
-    ojo_derecho_eje: "",
-    ojo_izquierdo_esfera: "",
-    ojo_izquierdo_cilindro: "",
-    ojo_izquierdo_eje: "",
+    cliente_id: clienteIdParam || "",
+    fecha: new Date().toISOString().split('T')[0], // Fecha de hoy
+    od_esfera: "",
+    od_cilindro: "",
+    od_eje: "",
+    oi_esfera: "",
+    oi_cilindro: "",
+    oi_eje: "",
     distancia_pupilar: "",
-    observaciones: "",
+    observaciones: ""
   });
 
   useEffect(() => {
-    if (clienteId) {
-      cargarCliente(clienteId);
-      setFormData(prev => ({ ...prev, cliente_id: clienteId }));
-    }
-  }, [clienteId]);
+    cargarClientes();
+  }, []);
 
-  const cargarCliente = async (id: string) => {
+  const cargarClientes = async () => {
     try {
       const { data, error } = await supabase
         .from('clientes')
-        .select('*')
-        .eq('id', id)
-        .single();
-
+        .select('id, nombre, apellido, email')
+        .order('nombre');
+      
       if (error) throw error;
-      setCliente(data);
+      setClientes(data || []);
     } catch (error) {
-      console.error('Error al cargar cliente:', error);
-      toast.error('Error al cargar información del cliente');
+      console.error('Error al cargar clientes:', error);
+      toast.error('No se pudieron cargar los clientes');
     }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value
+    });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!formData.cliente_id) {
+      toast.error("Debes seleccionar un cliente");
+      return;
+    }
+
     setLoading(true);
 
     try {
-      // Validar que se haya seleccionado un cliente
-      if (!formData.cliente_id) {
-        toast.error('Debe seleccionar un cliente');
-        setLoading(false);
-        return;
-      }
-
-      // Preparar datos para inserción
+      // Preparar datos para inserción (Convertir strings vacíos a null o números)
       const recetaData = {
         cliente_id: formData.cliente_id,
         fecha: formData.fecha,
-        ojo_derecho_esfera: formData.ojo_derecho_esfera ? parseFloat(formData.ojo_derecho_esfera) : null,
-        ojo_derecho_cilindro: formData.ojo_derecho_cilindro ? parseFloat(formData.ojo_derecho_cilindro) : null,
-        ojo_derecho_eje: formData.ojo_derecho_eje ? parseInt(formData.ojo_derecho_eje) : null,
-        ojo_izquierdo_esfera: formData.ojo_izquierdo_esfera ? parseFloat(formData.ojo_izquierdo_esfera) : null,
-        ojo_izquierdo_cilindro: formData.ojo_izquierdo_cilindro ? parseFloat(formData.ojo_izquierdo_cilindro) : null,
-        ojo_izquierdo_eje: formData.ojo_izquierdo_eje ? parseInt(formData.ojo_izquierdo_eje) : null,
+        ojo_derecho_esfera: formData.od_esfera ? parseFloat(formData.od_esfera) : null,
+        ojo_derecho_cilindro: formData.od_cilindro ? parseFloat(formData.od_cilindro) : null,
+        ojo_derecho_eje: formData.od_eje ? parseInt(formData.od_eje) : null,
+        ojo_izquierdo_esfera: formData.oi_esfera ? parseFloat(formData.oi_esfera) : null,
+        ojo_izquierdo_cilindro: formData.oi_cilindro ? parseFloat(formData.oi_cilindro) : null,
+        ojo_izquierdo_eje: formData.oi_eje ? parseInt(formData.oi_eje) : null,
         distancia_pupilar: formData.distancia_pupilar ? parseFloat(formData.distancia_pupilar) : null,
-        observaciones: formData.observaciones || null,
+        observaciones: formData.observaciones || null
       };
 
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('recetas')
-        .insert([recetaData])
-        .select()
-        .single();
+        .insert([recetaData]);
 
       if (error) throw error;
 
-      toast.success('Receta creada exitosamente');
-      router.push(`/clientes/${formData.cliente_id}`);
-    } catch (error) {
-      console.error('Error al crear receta:', error);
-      toast.error('Error al crear la receta');
+      toast.success('Receta guardada exitosamente');
+      router.push('/recetas'); // O redirigir al detalle del cliente
+    } catch (error: any) {
+      console.error('Error al guardar receta:', error);
+      toast.error(error.message || 'Error al guardar la receta');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
+    <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center gap-4">
-        <Link href="/clientes">
-          <button className="p-2 hover:bg-gray-100 rounded-lg transition">
-            <ArrowLeft className="h-6 w-6 text-gray-600" />
-          </button>
-        </Link>
+      <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-800">Nueva Receta Oftalmológica</h1>
-          <p className="text-gray-500">Registra una nueva receta para el cliente</p>
+          <p className="text-gray-500">Registra los datos de graduación del paciente</p>
         </div>
+        <Link href="/recetas">
+          <button className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:text-gray-800 transition">
+            <ArrowLeft className="h-5 w-5" />
+            Volver
+          </button>
+        </Link>
       </div>
 
-      {/* Información del cliente */}
-      {cliente && (
-        <div className="bg-gradient-to-br from-purple-500 to-indigo-600 text-white rounded-xl shadow-lg p-6">
-          <div className="flex items-center gap-4">
-            <div className="h-16 w-16 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center border-2 border-white/30">
-              <User className="h-8 w-8 text-white" />
-            </div>
-            <div>
-              <h2 className="text-2xl font-bold">
-                {cliente.nombre} {cliente.apellido}
-              </h2>
-              <p className="text-purple-100">{cliente.email}</p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Formulario */}
-      <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow-md p-8 space-y-8">
-        {/* Fecha */}
-        <div>
-          <label className="block text-sm font-semibold text-gray-700 mb-2">
-            Fecha de la Receta *
+      <form onSubmit={handleSubmit} className="bg-white shadow-md rounded-xl p-8">
+        
+        {/* Selección de Cliente */}
+        <div className="mb-8">
+          <label className="block text-gray-700 font-medium mb-2 flex items-center gap-2">
+            <User className="h-5 w-5 text-blue-600" />
+            Paciente <span className="text-red-500">*</span>
           </label>
-          <input
-            type="date"
-            name="fecha"
-            value={formData.fecha}
+          <select
+            name="cliente_id"
+            value={formData.cliente_id}
             onChange={handleChange}
             required
-            className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:outline-none"
-          />
+            className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none text-gray-900 bg-white"
+          >
+            <option value="">Seleccionar paciente...</option>
+            {clientes.map(cliente => (
+              <option key={cliente.id} value={cliente.id}>
+                {cliente.nombre} {cliente.apellido}
+              </option>
+            ))}
+          </select>
         </div>
 
-        {/* Ojo Derecho */}
-        <div className="border-t pt-6">
-          <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-            <Eye className="h-6 w-6 text-purple-600" />
-            Ojo Derecho (OD)
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Esfera (SPH)
-              </label>
-              <input
-                type="number"
-                step="0.25"
-                name="ojo_derecho_esfera"
-                value={formData.ojo_derecho_esfera}
-                onChange={handleChange}
-                placeholder="-3.50"
-                className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:outline-none"
-              />
-              <p className="text-xs text-gray-500 mt-1">Ejemplo: -3.50, +2.00</p>
+        {/* Datos de Graduación */}
+        <div className="mb-8">
+          <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+            <Glasses className="h-5 w-5 text-blue-600" />
+            Graduación
+          </h2>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {/* Ojo Derecho (OD) */}
+            <div className="bg-blue-50 p-6 rounded-xl border border-blue-100">
+              <h3 className="font-bold text-blue-800 mb-4 text-center">Ojo Derecho (OD)</h3>
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-600 mb-1">Esfera</label>
+                  <input
+                    type="number"
+                    step="0.25"
+                    name="od_esfera"
+                    value={formData.od_esfera}
+                    onChange={handleChange}
+                    placeholder="0.00"
+                    className="w-full px-3 py-2 border rounded-lg text-gray-900 text-center"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-600 mb-1">Cilindro</label>
+                  <input
+                    type="number"
+                    step="0.25"
+                    name="od_cilindro"
+                    value={formData.od_cilindro}
+                    onChange={handleChange}
+                    placeholder="0.00"
+                    className="w-full px-3 py-2 border rounded-lg text-gray-900 text-center"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-600 mb-1">Eje</label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="180"
+                    name="od_eje"
+                    value={formData.od_eje}
+                    onChange={handleChange}
+                    placeholder="0-180"
+                    className="w-full px-3 py-2 border rounded-lg text-gray-900 text-center"
+                  />
+                </div>
+              </div>
             </div>
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Cilindro (CYL)
-              </label>
-              <input
-                type="number"
-                step="0.25"
-                name="ojo_derecho_cilindro"
-                value={formData.ojo_derecho_cilindro}
-                onChange={handleChange}
-                placeholder="-1.00"
-                className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:outline-none"
-              />
-              <p className="text-xs text-gray-500 mt-1">Ejemplo: -1.00, +0.50</p>
-            </div>
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Eje (AXIS)
-              </label>
-              <input
-                type="number"
-                min="0"
-                max="180"
-                name="ojo_derecho_eje"
-                value={formData.ojo_derecho_eje}
-                onChange={handleChange}
-                placeholder="90"
-                className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:outline-none"
-              />
-              <p className="text-xs text-gray-500 mt-1">Rango: 0-180°</p>
+
+            {/* Ojo Izquierdo (OI) */}
+            <div className="bg-green-50 p-6 rounded-xl border border-green-100">
+              <h3 className="font-bold text-green-800 mb-4 text-center">Ojo Izquierdo (OI)</h3>
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-600 mb-1">Esfera</label>
+                  <input
+                    type="number"
+                    step="0.25"
+                    name="oi_esfera"
+                    value={formData.oi_esfera}
+                    onChange={handleChange}
+                    placeholder="0.00"
+                    className="w-full px-3 py-2 border rounded-lg text-gray-900 text-center"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-600 mb-1">Cilindro</label>
+                  <input
+                    type="number"
+                    step="0.25"
+                    name="oi_cilindro"
+                    value={formData.oi_cilindro}
+                    onChange={handleChange}
+                    placeholder="0.00"
+                    className="w-full px-3 py-2 border rounded-lg text-gray-900 text-center"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-600 mb-1">Eje</label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="180"
+                    name="oi_eje"
+                    value={formData.oi_eje}
+                    onChange={handleChange}
+                    placeholder="0-180"
+                    className="w-full px-3 py-2 border rounded-lg text-gray-900 text-center"
+                  />
+                </div>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Ojo Izquierdo */}
-        <div className="border-t pt-6">
-          <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-            <Eye className="h-6 w-6 text-purple-600" />
-            Ojo Izquierdo (OI)
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Esfera (SPH)
-              </label>
-              <input
-                type="number"
-                step="0.25"
-                name="ojo_izquierdo_esfera"
-                value={formData.ojo_izquierdo_esfera}
-                onChange={handleChange}
-                placeholder="-3.50"
-                className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:outline-none"
-              />
-              <p className="text-xs text-gray-500 mt-1">Ejemplo: -3.50, +2.00</p>
-            </div>
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Cilindro (CYL)
-              </label>
-              <input
-                type="number"
-                step="0.25"
-                name="ojo_izquierdo_cilindro"
-                value={formData.ojo_izquierdo_cilindro}
-                onChange={handleChange}
-                placeholder="-1.00"
-                className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:outline-none"
-              />
-              <p className="text-xs text-gray-500 mt-1">Ejemplo: -1.00, +0.50</p>
-            </div>
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Eje (AXIS)
-              </label>
-              <input
-                type="number"
-                min="0"
-                max="180"
-                name="ojo_izquierdo_eje"
-                value={formData.ojo_izquierdo_eje}
-                onChange={handleChange}
-                placeholder="90"
-                className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:outline-none"
-              />
-              <p className="text-xs text-gray-500 mt-1">Rango: 0-180°</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Distancia Pupilar */}
-        <div className="border-t pt-6">
+        {/* Otros datos */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
-              Distancia Pupilar (DP)
-            </label>
+            <label className="block text-gray-700 font-medium mb-2">Distancia Pupilar (DP)</label>
             <input
               type="number"
               step="0.5"
               name="distancia_pupilar"
               value={formData.distancia_pupilar}
               onChange={handleChange}
-              placeholder="63"
-              className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:outline-none"
+              placeholder="Ej: 64"
+              className="w-full px-4 py-3 border rounded-lg text-gray-900"
             />
-            <p className="text-xs text-gray-500 mt-1">Distancia entre pupilas en milímetros (ejemplo: 63 mm)</p>
+          </div>
+          <div>
+            <label className="block text-gray-700 font-medium mb-2">Fecha de Receta</label>
+            <input
+              type="date"
+              name="fecha"
+              value={formData.fecha}
+              onChange={handleChange}
+              className="w-full px-4 py-3 border rounded-lg text-gray-900"
+            />
           </div>
         </div>
 
-        {/* Observaciones */}
-        <div className="border-t pt-6">
-          <label className="block text-sm font-semibold text-gray-700 mb-2">
+        <div className="mb-8">
+          <label className="block text-gray-700 font-medium mb-2 flex items-center gap-2">
+            <FileText className="h-5 w-5 text-blue-600" />
             Observaciones
           </label>
           <textarea
             name="observaciones"
             value={formData.observaciones}
             onChange={handleChange}
-            rows={4}
-            placeholder="Notas adicionales sobre la receta..."
-            className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:outline-none resize-none"
+            rows={3}
+            placeholder="Notas adicionales (tipo de lente recomendado, adición, etc.)"
+            className="w-full px-4 py-3 border rounded-lg resize-none text-gray-900"
           />
         </div>
 
-        {/* Botones */}
-        <div className="flex gap-4 pt-6 border-t">
-          <button
-            type="submit"
-            disabled={loading}
-            className="flex-1 bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-xl shadow-md font-semibold transition transform hover:-translate-y-1 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {loading ? (
-              <>
-                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                Guardando...
-              </>
-            ) : (
-              <>
-                <Save className="h-5 w-5" />
-                Guardar Receta
-              </>
-            )}
-          </button>
-          <Link href="/clientes" className="flex-1">
+        <div className="flex justify-end gap-4">
+          <Link href="/recetas">
             <button
               type="button"
-              className="w-full bg-gray-200 hover:bg-gray-300 text-gray-700 px-6 py-3 rounded-xl font-semibold transition"
+              className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition font-semibold"
             >
               Cancelar
             </button>
           </Link>
+          <button
+            type="submit"
+            disabled={loading}
+            className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition font-semibold flex items-center gap-2 shadow-md disabled:opacity-50"
+          >
+            <Save className="h-5 w-5" />
+            {loading ? 'Guardando...' : 'Guardar Receta'}
+          </button>
         </div>
       </form>
-
-      {/* Ayuda */}
-      <div className="bg-blue-50 border border-blue-200 rounded-xl p-6">
-        <h3 className="font-bold text-blue-800 mb-2">ℹ️ Información sobre la receta</h3>
-        <ul className="text-sm text-blue-700 space-y-1">
-          <li>• <strong>Esfera (SPH):</strong> Mide la miopía (-) o hipermetropía (+)</li>
-          <li>• <strong>Cilindro (CYL):</strong> Mide el astigmatismo</li>
-          <li>• <strong>Eje (AXIS):</strong> Orientación del astigmatismo (0-180°)</li>
-          <li>• <strong>Distancia Pupilar (DP):</strong> Distancia entre las pupilas en milímetros</li>
-        </ul>
-      </div>
     </div>
   );
 }
